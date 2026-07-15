@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>UPAS - وثيقة معمارية التنفيذ</title>
+<style>
+@font-face {
+    font-family: 'Noto Sans Arabic';
+    src: url('file:///home/z/.local/share/fonts/truetype/arabic/NotoSansArabic.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Noto Kufi Arabic';
+    src: url('file:///home/z/.local/share/fonts/truetype/arabic/NotoKufiArabic.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'IBM Plex Mono';
+    src: url('file:///home/z/.local/share/fonts/truetype/arabic/IBMPlexMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+</style>
+<style>
+@page {
+    size: 210mm 297mm;
+    margin: 0;
+}
+
+:root {
+    --c-bg: #ffffff;
+    --c-cover-bg: #0f1b2d;
+    --c-primary: #1a365d;
+    --c-primary-light: #2a5298;
+    --c-accent: #3b82f6;
+    --c-accent-light: #dbeafe;
+    --c-text: #1e293b;
+    --c-text-muted: #64748b;
+    --c-border: #e2e8f0;
+    --c-card-bg: #f8fafc;
+    --c-table-header: #1e3a5f;
+    --c-table-stripe: #f1f5f9;
+    --c-code-bg: #1e293b;
+    --c-code-text: #e2e8f0;
+    --c-success: #059669;
+    --c-warning: #d97706;
+    --c-danger: #dc2626;
+    --page-w: 210mm;
+    --content-pad: 50px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: var(--page-w);
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: 'Noto Sans Arabic', 'Noto Kufi Arabic', sans-serif;
+    font-size: 11pt;
+    line-height: 1.75;
+    direction: rtl;
+}
+
+@media screen {
+    html {
+        height: auto;
+        display: flex;
+        justify-content: center;
+        background: #e2e8f0;
+    }
+    body {
+        margin: 20px auto;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    }
+}
+
+/* ======================== COVER ======================== */
+.cover {
+    width: var(--page-w);
+    height: 297mm;
+    background: var(--c-cover-bg);
+    position: relative;
+    overflow: hidden;
+    break-after: page;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px;
+}
+
+.cover-layer-1 {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.cover-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.cover-accent-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--c-accent), #60a5fa, var(--c-accent));
+}
+
+.cover-accent-line-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--c-accent), #60a5fa, var(--c-accent));
+}
+
+.cover-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(59,130,246,0.15);
+}
+
+.cover-circle-1 {
+    width: 500px; height: 500px;
+    top: -100px; right: 10px;
+}
+
+.cover-circle-2 {
+    width: 300px; height: 300px;
+    bottom: 50px; left: 10px;
+}
+
+.cover-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 44px;
+}
+
+.cover-badge {
+    display: inline-block;
+    padding: 6px 24px;
+    border: 1px solid rgba(59,130,246,0.4);
+    border-radius: 4px;
+    color: #60a5fa;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 0;
+}
+
+.cover-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 38pt;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.3;
+    margin-bottom: 0;
+}
+
+.cover-subtitle {
+    font-family: 'Noto Sans Arabic', sans-serif;
+    font-size: 14pt;
+    font-weight: 300;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 0;
+    max-width: 480px;
+}
+
+.cover-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--c-accent);
+    margin: 0 auto 30px;
+}
+
+.cover-meta {
+    font-size: 10pt;
+    color: #64748b;
+    line-height: 1.8;
+}
+
+.cover-meta strong {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* ======================== TOC ======================== */
+.toc-page {
+    break-after: page;
+    padding: 50px;
+}
+
+.toc-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 20pt;
+    font-weight: 800;
+    color: var(--c-primary);
+    margin-bottom: 8px;
+}
+
+.toc-divider {
+    width: 50px;
+    height: 3px;
+    background: var(--c-accent);
+    margin-bottom: 30px;
+}
+
+.toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--c-border);
+    font-size: 11pt;
+}
+
+.toc-item.level-1 {
+    font-weight: 700;
+    color: var(--c-primary);
+    font-size: 11.5pt;
+}
+
+.toc-item.level-2 {
+    padding-right: 24px;
+    font-weight: 400;
+    color: var(--c-text);
+}
+
+.toc-item.level-3 {
+    padding-right: 48px;
+    font-weight: 300;
+    color: var(--c-text-muted);
+    font-size: 10pt;
+}
+
+/* ======================== MAIN CONTENT ======================== */
+.main-content {
+    padding: 50px;
+}
+
+.chapter-header {
+    break-after: avoid;
+    break-inside: avoid;
+    margin-top: 36px;
+}
+
+.chapter-number {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10pt;
+    color: var(--c-accent);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.chapter-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 18pt;
+    font-weight: 800;
+    color: var(--c-primary);
+    line-height: 1.3;
+    margin-bottom: 8px;
+}
+
+.chapter-divider {
+    width: 40px;
+    height: 3px;
+    background: var(--c-accent);
+    margin-bottom: 20px;
+}
+
+.section-header {
+    margin-top: 24px;
+    break-after: avoid;
+    break-inside: avoid;
+}
+
+.section-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 13pt;
+    font-weight: 700;
+    color: var(--c-primary-light);
+    margin-bottom: 10px;
+}
+
+.subsection-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 11.5pt;
+    font-weight: 600;
+    color: var(--c-text);
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.body-text {
+    margin-bottom: 12px;
+    text-align: justify;
+    direction: rtl;
+}
+
+.body-text ul, .body-text ol {
+    margin: 8px 20px 12px 0;
+    padding-right: 16px;
+}
+
+.body-text li {
+    margin-bottom: 4px;
+}
+
+/* Code blocks */
+.code-block {
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5pt;
+    line-height: 1.6;
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+    break-inside: avoid;
+}
+
+.code-block .kw { color: #c084fc; }
+.code-block .type { color: #38bdf8; }
+.code-block .str { color: #4ade80; }
+.code-block .num { color: #fb923c; }
+.code-block .comment { color: #64748b; font-style: italic; }
+.code-block .prop { color: #fbbf24; }
+
+/* Tables */
+.table-wrapper {
+    margin: 16px 0;
+    break-inside: avoid;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+}
+
+.data-table thead th {
+    background: var(--c-table-header);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: right;
+    font-size: 10pt;
+}
+
+.data-table tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--c-border);
+    text-align: right;
+    vertical-align: top;
+}
+
+.data-table tbody tr:nth-child(even) {
+    background: var(--c-table-stripe);
+}
+
+.data-table code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9pt;
+    background: #f1f5f9;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--c-primary);
+}
+
+/* Info/Note boxes */
+.info-box {
+    border-right: 4px solid var(--c-accent);
+    background: #eff6ff;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+    break-inside: avoid;
+    font-size: 10.5pt;
+}
+
+.info-box-title {
+    font-weight: 700;
+    color: var(--c-primary);
+    margin-bottom: 4px;
+}
+
+.warning-box {
+    border-right: 4px solid var(--c-warning);
+    background: #fffbeb;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+    break-inside: avoid;
+    font-size: 10.5pt;
+}
+
+.critical-box {
+    border-right: 4px solid var(--c-danger);
+    background: #fef2f2;
+    padding: 14px 18px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+    break-inside: avoid;
+    font-size: 10.5pt;
+}
+
+/* Diagram images */
+.diagram-container {
+    margin: 20px 0;
+    text-align: center;
+    break-inside: avoid;
+}
+
+.diagram-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.diagram-caption {
+    font-size: 9.5pt;
+    color: var(--c-text-muted);
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Cards */
+.card {
+    background: var(--c-card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin: 12px 0;
+    break-inside: avoid;
+}
+
+.card-title {
+    font-weight: 700;
+    color: var(--c-primary);
+    margin-bottom: 6px;
+    font-size: 11pt;
+}
+
+/* Phase timeline */
+.phase-item {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+    break-inside: avoid;
+}
+
+.phase-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--c-primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 14pt;
+}
+
+.phase-content {
+    flex: 1;
+}
+
+.phase-title {
+    font-weight: 700;
+    color: var(--c-primary);
+    font-size: 11.5pt;
+    margin-bottom: 4px;
+}
+
+/* Checklist */
+.checklist {
+    margin: 10px 0;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 10.5pt;
+}
+
+.check-icon {
+    color: var(--c-success);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ======================== COVER PAGE ======================== -->
+<div class="cover">
+    <div class="cover-layer-1">
+        <div class="cover-grid"></div>
+        <div class="cover-accent-line"></div>
+        <div class="cover-accent-line-bottom"></div>
+        <div class="cover-circle cover-circle-1"></div>
+        <div class="cover-circle cover-circle-2"></div>
+    </div>
+    <div class="cover-content">
+        <div class="cover-badge">Software Architecture Document</div>
+        <h1 class="cover-title">UPAS</h1>
+        <div class="cover-subtitle">
+            Underground Protection Analysis System
+        </div>
+        <div class="cover-divider"></div>
+        <p style="font-family:'Noto Sans Arabic';font-size:16pt;font-weight:600;color:#e2e8f0;margin-bottom:6px;">
+            وثيقة معمارية التنفيذ
+        </p>
+        <p style="font-family:'Noto Sans Arabic';font-size:11pt;color:#94a3b8;margin-bottom:30px;">
+            تحليل المتطلبات وتصميم معمارية النظام - النسخة 1.0
+        </p>
+        <div class="cover-meta">
+            <strong>نوع الوثيقة:</strong> توصيف معماري للتنفيذ<br>
+            <strong>المرحلة المستهدفة:</strong> Phase 1 - النموذج الأولي<br>
+            <strong>الحالة:</strong> بانتظار الموافقة على المعمارية
+        </div>
+    </div>
+</div>
+
+<!-- ======================== TABLE OF CONTENTS ======================== -->
+<div class="toc-page">
+    <div class="toc-title">فهرس المحتويات</div>
+    <div class="toc-divider"></div>
+
+    <div class="toc-item level-1"><span>1. هدف المشروع وطبيعته</span></div>
+    <div class="toc-item level-2"><span>1.1 هدف المشروع</span></div>
+    <div class="toc-item level-2"><span>1.2 طبيعة التطبيق ونطاقه</span></div>
+    <div class="toc-item level-2"><span>1.3 نطاق النسخة الأولى (Phase 1)</span></div>
+
+    <div class="toc-item level-1"><span>2. التقنيات المطلوبة</span></div>
+    <div class="toc-item level-2"><span>2.1 حزمة الواجهة الأمامية</span></div>
+    <div class="toc-item level-2"><span>2.2 حزمة الخلفية المستقبلية</span></div>
+    <div class="toc-item level-2"><span>2.3 مبررات اختيار التقنيات</span></div>
+
+    <div class="toc-item level-1"><span>3. هيكل النظام العام</span></div>
+    <div class="toc-item level-2"><span>3.1 معمارية الطبقات</span></div>
+    <div class="toc-item level-2"><span>3.2 مخطط المكونات الرئيسية</span></div>
+    <div class="toc-item level-2"><span>3.3 تدفق البيانات في النظام</span></div>
+
+    <div class="toc-item level-1"><span>4. نموذج البيانات</span></div>
+    <div class="toc-item level-2"><span>4.1 نموذج المشروع (Project)</span></div>
+    <div class="toc-item level-2"><span>4.2 نموذج التهديد (Threat / Bomb)</span></div>
+    <div class="toc-item level-2"><span>4.3 نموذج التربة (SoilProfile)</span></div>
+    <div class="toc-item level-2"><span>4.4 نموذج المنشأة (Structure)</span></div>
+    <div class="toc-item level-2"><span>4.5 نموذج النتائج (AnalysisResult)</span></div>
+
+    <div class="toc-item level-1"><span>5. النموذج ثلاثي الأبعاد</span></div>
+    <div class="toc-item level-2"><span>5.1 محرك التصور ثلاثي الأبعاد</span></div>
+    <div class="toc-item level-2"><span>5.2 المكونات ثلاثية الأبعاد</span></div>
+    <div class="toc-item level-2"><span>5.3 وضع المراجعة الهندسية</span></div>
+
+    <div class="toc-item level-1"><span>6. الوحدات البرمجية</span></div>
+    <div class="toc-item level-2"><span>6.1 إدارة المشاريع</span></div>
+    <div class="toc-item level-2"><span>6.2 تعريف التهديد</span></div>
+    <div class="toc-item level-2"><span>6.3 نموذج التربة</span></div>
+    <div class="toc-item level-2"><span>6.4 نموذج المنشأة</span></div>
+    <div class="toc-item level-2"><span>6.5 محرك الحسابات الهندسية</span></div>
+    <div class="toc-item level-2"><span>6.6 لوحة النتائج</span></div>
+    <div class="toc-item level-2"><span>6.7 نظام التقارير</span></div>
+
+    <div class="toc-item level-1"><span>7. مكونات الواجهة</span></div>
+    <div class="toc-item level-2"><span>7.1 لوحة التحكم (Dashboard)</span></div>
+    <div class="toc-item level-2"><span>7.2 معالج المشروع (Project Wizard)</span></div>
+    <div class="toc-item level-2"><span>7.3 واجهة التحليل ثلاثي الأبعاد</span></div>
+
+    <div class="toc-item level-1"><span>8. تنظيم الكود</span></div>
+    <div class="toc-item level-2"><span>8.1 هيكل المجلدات التفصيلي</span></div>
+    <div class="toc-item level-2"><span>8.2 قواعد تنظيم الكود</span></div>
+
+    <div class="toc-item level-1"><span>9. طريقة التطوير</span></div>
+    <div class="toc-item level-2"><span>9.1 مبادئ التطوير</span></div>
+    <div class="toc-item level-2"><span>9.2 إدارة الحالة</span></div>
+
+    <div class="toc-item level-1"><span>10. مراحل التنفيذ</span></div>
+    <div class="toc-item level-2"><span>10.1 المرحلة الأولى: النموذج الأولي</span></div>
+    <div class="toc-item level-2"><span>10.2 المرحلة الثانية: محرك الحسابات</span></div>
+    <div class="toc-item level-2"><span>10.3 المرحلة الثالثة: الإدارة والتقارير</span></div>
+    <div class="toc-item level-2"><span>10.4 المرحلة الرابعة: التكامل المتقدم</span></div>
+
+    <div class="toc-item level-1"><span>11. معايير القبول</span></div>
+    <div class="toc-item level-2"><span>11.1 معايير قبول المرحلة الأولى</span></div>
+    <div class="toc-item level-2"><span>11.2 قائمة الفحص الشاملة</span></div>
+</div>
+
+<!-- ======================== MAIN CONTENT ======================== -->
+<div class="main-content">
+
+<!-- ============================================================ -->
+<!-- CHAPTER 1: هدف المشروع وطبيعته -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 01</div>
+    <h1 class="chapter-title">هدف المشروع وطبيعته</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">1.1 هدف المشروع</h2>
+</div>
+
+<p class="body-text">
+يهدف مشروع UPAS (Underground Protection Analysis System) إلى إنشاء منصة هندسية تفاعلية تعمل عبر المتصفح، تتيح للمستخدمين تعريف حالات تحليل هندسية كاملة تتضمن تهديدا أمنيا محددا وطبقات تربة متعددة ومنشآت تحت أرض متنوعة الأشكال، ثم إجراء التحليلات الهندسية اللازمة وعرض النتائج في نموذج ثلاثي الأبعاد تفاعلي يمكن تدويره وتكبيره واستعراض تفاصيله الهندسية بدقة. المنصة مصممة لتكون أداة احترافية تخدم المهندسين المدنيين والعسكريين في مجال الحماية تحت السطحية، حيث تجمع بين سهولة إدخال البيانات ودقة العرض الهندسي.
+</p>
+
+<p class="body-text">
+تتمحور فلسفة التصميم حول فصل واضح بين طبقات النظام المختلفة، بحيث تتم إدارة واجهة المستخدم بشكل مستقل عن محرك الحسابات الهندسية، ويكون النموذج ثلاثي الأبعاد واجهة المراجعة الرئيسية التي ترتبط كل قيمة هندسية فيها بعنصر مرئي يمكن للمهندس اختياره واستعراض بياناته. هذا الفصل يضمن قابلية التوسع والصيانة، ويجعل من الممكن إضافة معادلات حسابية جديدة أو أنواع منشآت إضافية دون التأثير على باقي أجزاء النظام.
+</p>
+
+<p class="body-text">
+الهدف النهائي هو تمكين المستخدم من إنشاء مشروع جديد في بضع خطوات عبر معالج مشروع مُوجّه (Project Wizard)، ثم الانتقال إلى واجهة التحليل ثلاثي الأبعاد حيث يرى المنشأة والتربة والتهديد معا في بيئة واحدة، مع إمكانية مراجعة جميع الأبعاد والسماكات والنتائج قبل استخراج تقرير هندسي شامل بصيغة PDF يتضمن صورا من النموذج ثلاثي الأبعاد وجميع البيانات والنتائج.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">1.2 طبيعة التطبيق ونطاقه</h2>
+</div>
+
+<p class="body-text">
+UPAS هو تطبيق ويب (Web Application) يعمل بالكامل من المتصفح دون الحاجة لتثبيت أي برامج إضافية على جهاز المستخدم. في المرحلة الأولى، يعمل النظام بالكامل على جانب العميل (Client-Side) مع تخزين البيانات محليا، مما يجعله قابلا للاستخدام في بيئات لا تتوفر فيها اتصالات شبكة مستقرة، وهو أمر بالغ الأهمية في التطبيقات الهندسية الميدانية.
+</p>
+
+<p class="body-text">
+يستهدف النظام فئتين رئيسيتين من المستخدمين: فئة المستخدم الأساسي (User) الذي يمتلك صلاحيات إنشاء المشاريع وإدخال البيانات وتشغيل التحليل ومشاهدة النتائج، وفئة المراجع أو المهندس (Reviewer / Engineer) الذي يتمتع بصلاحيات إضافية تشمل مشاهدة جميع المعاملات ومراجعة النماذج والنتائج وإضافة ملاحظات فنية. هذا التصنيف يتيح استخدام النظام في بيئات العمل الجماعي حيث يتم فصل دور التصميم عن دور المراجعة والاعتماد.
+</p>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>الخاصية</th>
+                <th>الوصف</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>نوع التطبيق</td>
+                <td>تطبيق ويب تفاعلي (Web Application)</td>
+            </tr>
+            <tr>
+                <td>منصة التشغيل</td>
+                <td>المتصفح (Chrome, Firefox, Edge, Safari)</td>
+            </tr>
+            <tr>
+                <td>اللغة</td>
+                <td>عربية (RTL) مع دعم المصطلحات الإنجليزية التقنية</td>
+            </tr>
+            <tr>
+                <td>التخزين (Phase 1)</td>
+                <td>محلي (LocalStorage / JSON Files)</td>
+            </tr>
+            <tr>
+                <td>التخزين (Phase 2)</td>
+                <td>خادم مركزي (PostgreSQL)</td>
+            </tr>
+            <tr>
+                <td>الاتصال بالشبكة (Phase 1)</td>
+                <td>غير مطلوب بعد التحميل الأول</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">1.3 نطاق النسخة الأولى (Phase 1)</h2>
+</div>
+
+<p class="body-text">
+تُعرّف النسخة الأولى من النظام بأنها نموذج أولي (Prototype) يركز على إثبات المفاهيم الأساسية وتوفير البنية التحتية اللازمة للمراحل اللاحقة. تشمل هذه النسخة إعداد بيئة العمل مع React و TypeScript و Vite، وبناء مشهد ثلاثي الأبعاد أساسي يعرض التربة والمنشأة والتهديد، وإنشاء نماذج إدخال البيانات لجميع الكيانات، وتوفير تخزين محلي لحالة المشروع. لا تتضمن هذه المرحلة محرك الحسابات الهندسية الفعلي الذي سيُبنى في المرحلة الثانية، بل تكتفي بمواضع فارغة (Placeholders) لواجهات الحسابات.
+</p>
+
+<div class="info-box">
+    <div class="info-box-title">ملاحظة للمطور</div>
+    الهدف من المرحلة الأولى ليس بناء تطبيق مبسّط أو تجريبي، بل بناء الأساس المتين الذي تقوم عليه جميع المراحل اللاحقة. يجب أن تكون البنية البرمجية قابلة للتوسع من البداية، مع فصل واضح بين المكونات والمسؤوليات.
+</div>
+
+<!-- ============================================================ -->
+<!-- CHAPTER 2: التقنيات المطلوبة -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 02</div>
+    <h1 class="chapter-title">التقنيات المطلوبة</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">2.1 حزمة الواجهة الأمامية (Frontend Stack)</h2>
+</div>
+
+<p class="body-text">
+تعتمد واجهة UPAS الأمامية على مجموعة مختارة بعناية من التقنيات الحديثة التي توفر معا بيئة تطوير قوية وأداء عاليا وتجربة مستخدم سلسة. تم اختيار كل تقنية لمبرر فني واضح يتناسب مع طبيعة التطبيق الهندسي الذي يتطلب معالجة رسومية ثلاثية الأبعاد وإدارة حالة معقدة ودعم كامل للغة العربية.
+</p>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>التقنية</th>
+                <th>الإصدار</th>
+                <th>الدور في المشروع</th>
+                <th>مبرر الاختيار</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>React</code></td>
+                <td>18+</td>
+                <td>مكتبة بناء واجهة المستخدم الأساسية</td>
+                <td>نظام المكونات القابل لإعادة الاستخدام، مجتمع ضخم، دعم ممتاز ل TypeScript</td>
+            </tr>
+            <tr>
+                <td><code>TypeScript</code></td>
+                <td>5.x</td>
+                <td>لغة البرمجة الرئيسية مع أنواع صارمة</td>
+                <td>اكتشاف الأخطاء مبكرا، توثيق ذاتي عبر الأنواع، أساس قوي للنماذج الهندسية</td>
+            </tr>
+            <tr>
+                <td><code>Vite</code></td>
+                <td>5+</td>
+                <td>أداة البناء والتطوير (Build Tool)</td>
+                <td>سرعة بناء فائقة، HMR فوري، إعداد بسيط، دعم أصلي ل TypeScript</td>
+            </tr>
+            <tr>
+                <td><code>Three.js</code></td>
+                <td>r160+</td>
+                <td>محرك الرسوميات ثلاثية الأبعاد الأساسي</td>
+                <td>المكتبة الأكثر نضجا في WebGL، دعم كامل للرسوميات ثلاثية الأبعاد في المتصفح</td>
+            </tr>
+            <tr>
+                <td><code>React Three Fiber</code></td>
+                <td>8+</td>
+                <td>ربط Three.js مع React</td>
+                <td>تكامل سلس بين النموذج ثلاثي الأبعاد وحالة React، مكونات تفاعلية</td>
+            </tr>
+            <tr>
+                <td><code>Drei</code></td>
+                <td>9+</td>
+                <td>مكونات إضافية ل React Three Fiber</td>
+                <td>أدوات مساعدة جاهزة (OrbitControls, Text3D، إلخ) تُسرّع التطوير</td>
+            </tr>
+            <tr>
+                <td><code>Tailwind CSS</code></td>
+                <td>3+</td>
+                <td>إطار عمل التصميم (Utility-First CSS)</td>
+                <td>تصميم سريع، قابلية التخصيص العالية، دعم ممتاز ل RTL</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">2.2 حزمة الخلفية المستقبلية (Backend Stack)</h2>
+</div>
+
+<p class="body-text">
+على الرغم من أن المرحلة الأولى تعتمد بالكامل على التشغيل من جانب العميل، إلا أن المعمارية مصممة لاستيعاب إضافة خادم خلفي في المرحلة الثانية دون إعادة هيكلة جذرية. تم اختيار التقنيات الخلفية لتتسق مع التقنيات الأمامية من حيث لغة البرمجة (TypeScript) ونمط العمل، مما يُسهّل انتقال المطورين بين الواجهة والخادم ويقلل من التعقيد التقني العام للنظام.
+</p>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>التقنية</th>
+                <th>الدور</th>
+                <th>متى تُستخدم</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Node.js</code></td>
+                <td>بيئة تشغيل الخادم</td>
+                <td>Phase 2 - عند الحاجة إلى خادم مركزي</td>
+            </tr>
+            <tr>
+                <td><code>TypeScript</code></td>
+                <td>لغة برمجة الخادم (مشاركة الأنواع مع الواجهة)</td>
+                <td>Phase 2 - مشاركة نماذج البيانات</td>
+            </tr>
+            <tr>
+                <td><code>PostgreSQL</code></td>
+                <td>قاعدة بيانات علائقية</td>
+                <td>Phase 2 - تخزين المشاريع والمستخدمين</td>
+            </tr>
+            <tr>
+                <td><code>REST API</code></td>
+                <td>واجهة الاتصال بين الواجهة والخادم</td>
+                <td>Phase 2 - مزامنة البيانات</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">2.3 مبررات اختيار التقنيات</h2>
+</div>
+
+<p class="body-text">
+تم اختيار حزمة التقنيات الأمامية بناء على عدة اعتبارات هندسية جوهرية. أولا، يوفر React مع TypeScript أساسا متينا لنمذجة البيانات الهندسية المعقدة التي يتطلبها النظام، حيث يمكن تعريف واجهات TypeScript صارمة لكل كيان (قنبلة، طبقة تربة، منشأة) مع التحقق من صحة البيانات في وقت التطوير. ثانيا، يُعد Three.js مع React Three Fiber المزيج الأكثر نضجا لتقديم الرسوميات ثلاثية الأبعاد في تطبيقات React، حيث يوفر Drei مجموعة غنية من المكونات الجاهزة مثل أدوات التحكم بالكاميرا والتسميات النصية ثلاثية الأبعاد وأدوات القص.
+</p>
+
+<p class="body-text">
+أما اختيار Vite كأداة بناء فجاء بسبب سرعته الاستثنائية في التحويل البرمجي (HMR) التي تُسرّع دورة التطوير بشكل ملحوظ مقارنة بأدوات البناء التقليدية. كما أن Vite يوفر دعما أصليا ل TypeScript و ES Modules، مما يُلغي الحاجة إلى إعدادات معقدة. وأخيرا، يوفر Tailwind CSS نظام تصميم مرنا يدعم RTL بشكل كامل، مع إمكانية تخصيص الألوان والخطوط والمسافات بسهولة لتتناسب مع الهوية البصرية الهندسية المطلوبة.
+</p>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 3: هيكل النظام العام -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 03</div>
+    <h1 class="chapter-title">هيكل النظام العام</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">3.1 معمارية الطبقات</h2>
+</div>
+
+<p class="body-text">
+يعتمد UPAS على معمارية طبقات (Layered Architecture) واضحة تحقق الفصل التام بين المسؤوليات المختلفة في النظام. تتكون المعمارية من خمس طبقات رئيسية، كل منها مسؤولة عن نطاق محدد من العمليات وتتواصل مع الطبقات الأخرى عبر واجهات محددة بوضوح. هذا الفصل يضمن أن التغييرات في إحدى الطبقات لا تؤثر على باقي النظام، ويسمح بتطوير كل طبقة بشكل مستقل عن الأخرى.
+</p>
+
+<div class="diagram-container">
+    <img src="diagrams/system_arch.png" alt="System Architecture Diagram">
+    <div class="diagram-caption">شكل 1: معمارية طبقات نظام UPAS</div>
+</div>
+
+<p class="body-text">
+الطبقة الأولى هي طبقة واجهة المستخدم (UI Layer) التي تتضمن جميع المكونات المرئية من صفحات ونماذج إدخال وأزرار وقوائم. هذه الطبقة مسؤولة فقط عن عرض البيانات والتقاط تفاعلات المستخدم، ولا تحتوي على أي منطق حسابي أو هندسي. الطبقة الثانية هي محرك التصور ثلاثي الأبعاد (3D Visualization Engine) المبني على Three.js و React Three Fiber، وهو المسؤول عن عرض التضاريس وطبقات التربة والمنشآت والتهديدات في بيئة ثلاثية الأبعاد تفاعلية.
+</p>
+
+<p class="body-text">
+الطبقة الثالثة هي محرك الحسابات الهندسية (Engineering Calculation Engine) وهو الوحدة الأكثر حساسية في النظام، حيث يحتوي على جميع المعادلات والخوارزميات المستخدمة في حساب عمق الاختراق وضغط الانفجار والأحمال الديناميكية وتقييم حالة المنشأة. هذه الطبقة معزولة تماما عن واجهة المستخدم ولا تعتمد على أي مكتبة واجهة، مما يجعل اختبارها والتحقق منها أمرا مستقلا.
+</p>
+
+<p class="body-text">
+الطبقة الرابعة هي طبقة نماذج البيانات وإدارة الحالة (Data Models and State Management) التي تحتوي على تعريفات TypeScript لجميع الكيانات في النظام، بالإضافة إلى آلية إدارة الحالة المركزية (عبر React Context أو Zustand). أما الطبقة الخامسة فهي طبقة البيانات (Database Layer) التي تتعامل مع التخزين والاسترجاع، وتستخدم ملفات JSON في المرحلة الأولى مع التحول إلى PostgreSQL في المرحلة الثانية.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">3.2 مخطط المكونات الرئيسية</h2>
+</div>
+
+<p class="body-text">
+يتكون نظام UPAS من ثماني وحدات برمجية رئيسية (Modules) تعمل معا لتقديم تجربة تحليل هندسي متكاملة. كل وحدة مسؤولة عن نطاق وظيفي محدد وتتواصل مع الوحدات الأخرى عبر واجهات محددة بوضوح. المخطط التالي يوضح العلاقات بين هذه الوحدات وكيفية تدفق البيانات بينها.
+</p>
+
+<div class="diagram-container">
+    <img src="diagrams/component_arch.png" alt="Component Architecture Diagram">
+    <div class="diagram-caption">شكل 2: مخطط المكونات الرئيسية لنظام UPAS</div>
+</div>
+
+<p class="body-text">
+يُظهر المخطط أن محرك التصور ثلاثي الأبعاد يشكل المحور المركزي للنظام، حيث يتلقى بيانات من وحدات إدخال البيانات (التهديد، التربة، المنشأة) ويعرضها في بيئة مرئية واحدة. محرك الحسابات يأخذ نفس المدخلات وينتج النتائج التي تُعرض أيضا في النموذج ثلاثي الأبعاد وعلى لوحة النتائج. نظام التقارير يجمع البيانات من جميع الوحدات لتوليد التقرير النهائي.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">3.3 تدفق البيانات في النظام</h2>
+</div>
+
+<p class="body-text">
+يتبع النظام مسار تدفق بيانات واضح ومتسلسل يبدأ من إدخال المستخدم وينتهي بإنتاج التقرير الهندسي. هذا المسار مصمم ليكون خطيا في حالات التحليل العادية، مع إمكانية الرجوع والتعديل في أي نقطة دون فقدان البيانات السابقة. الفهم الدقيق لتدفق البيانات ضروري للمطور لضمان ربط المكونات بشكل صحيح.
+</p>
+
+<div class="diagram-container">
+    <img src="diagrams/data_flow.png" alt="Data Flow Diagram">
+    <div class="diagram-caption">شكل 3: تدفق البيانات في نظام UPAS</div>
+</div>
+
+<p class="body-text">
+يبدأ التدفق عندما ينشئ المستخدم مشروعا جديدا عبر لوحة التحكم، ثم يدخل البيانات عبر معالج المشروع (Project Wizard) الذي يمر بخمس خطوات متسلسلة: تعريف التهديد، ثم تعريف التربة، ثم تعريف المنشأة، ثم تشغيل التحليل، وأخيرا مراجعة النتائج. كل خطوة تُخزن بياناتها في نموذج المشروع المركزي، وعند اكتمال جميع البيانات يمكن تشغيل التحليل الذي يُمرر البيانات إلى محرك الحسابات ويُنتج نتائج تُعرض في النموذج ثلاثي الأبعاد وعلى لوحة النتائج.
+</p>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 4: نموذج البيانات -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 04</div>
+    <h1 class="chapter-title">نموذج البيانات</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<p class="body-text">
+يُعد نموذج البيانات (Data Model) الأساس الذي يرتكز عليه النظام بأكمله. يتم تعريف جميع الكيانات والأنواع باستخدام واجهات TypeScript (Interfaces) التي توفر تحققا صارما من الأنواع في وقت التطوير وتوثيقا ذاتيا للبنية البيانية. كل كيان في النظام يمثل مفهوما هندسيا حقيقيا بعلاقات محددة مع الكيانات الأخرى. فيما يلي تعريف كل نموذج بيانات رئيسي مع شرح مفصل لكل خاصية.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">4.1 نموذج المشروع (Project)</h2>
+</div>
+
+<p class="body-text">
+نموذج المشروع هو الكيان الجذري (Root Entity) في النظام، حيث يُجمّع جميع بيانات التحليل في كائن واحد. كل مشروع يحتوي على معلومات وصفية أساسية (الاسم وتاريخ الإنشاء) بالإضافة إلى مراجع لكائنات التهديد والتربة والمنشأة والنتائج. هذا التصميم يُسهّل عملية حفظ المشروع واسترجاعه وتصديره كملف واحد.
+</p>
+
+<div class="code-block"><span class="kw">interface</span> <span class="type">Project</span> {
+  <span class="prop">id</span>: <span class="type">string</span>;              <span class="comment">// معرّف فريد للمشروع (UUID)</span>
+  <span class="prop">name</span>: <span class="type">string</span>;            <span class="comment">// اسم المشروع الذي يُدخله المستخدم</span>
+  <span class="prop">createdDate</span>: <span class="type">string</span>;     <span class="comment">// تاريخ الإنشاء (ISO 8601)</span>
+  <span class="prop">modifiedDate</span>: <span class="type">string</span>;    <span class="comment">// تاريخ آخر تعديل</span>
+  <span class="prop">threat</span>: <span class="type">Threat</span>;          <span class="comment">// بيانات التهديد المرتبط بالمشروع</span>
+  <span class="prop">soil</span>: <span class="type">SoilProfile</span>;      <span class="comment">// نموذج التربة</span>
+  <span class="prop">structure</span>: <span class="type">Structure</span>;    <span class="comment">// بيانات المنشأة تحت الأرض</span>
+  <span class="prop">results</span>: <span class="type">AnalysisResult</span> | <span class="type">null</span>; <span class="comment">// نتائج التحليل (خالية قبل التشغيل)</span>
+  <span class="prop">notes</span>: <span class="type">string</span>[];        <span class="comment">// ملاحظات المراجع</span>
+}</div>
+
+<div class="section-header">
+    <h2 class="section-title">4.2 نموذج التهديد (Threat / Bomb)</h2>
+</div>
+
+<p class="body-text">
+يُمثّل نموذج التهديد القنبلة أو الذخيرة التي يُحلل النظام تأثيرها على المنشأة تحت الأرض. يحتوي النموذج على نوع السيناريو (اختراق، انفجار سطحي، أو سيناريو مخصص) بالإضافة إلى الخصائص الفيزيائية الكاملة للقنبلة مثل الكتلة وكتلة المتفجرات والأبعاد والسرعة وزاوية الاصطدام. هذه البيانات تُستخدم مباشرة في حسابات عمق الاختراق وضغط الانفجار في محرك الحسابات.
+</p>
+
+<div class="code-block"><span class="kw">interface</span> <span class="type">Threat</span> {
+  <span class="prop">scenarioType</span>: <span class="type">'penetrating'</span> | <span class="type">'surface_explosion'</span> | <span class="type">'custom'</span>;
+  <span class="prop">bomb</span>: <span class="type">Bomb</span>;
+}
+
+<span class="kw">interface</span> <span class="type">Bomb</span> {
+  <span class="prop">name</span>: <span class="type">string</span>;             <span class="comment">// اسم القنبلة (من قاعدة البيانات أو مخصص)</span>
+  <span class="prop">mass</span>: <span class="type">number</span>;             <span class="comment">// الكتلة الكلية (kg)</span>
+  <span class="prop">explosiveMass</span>: <span class="type">number</span>;    <span class="comment">// كتلة المتفجرات (kg)</span>
+  <span class="prop">length</span>: <span class="type">number</span>;            <span class="comment">// الطول (m)</span>
+  <span class="prop">diameter</span>: <span class="type">number</span>;          <span class="comment">// القطر (m)</span>
+  <span class="prop">velocity</span>: <span class="type">number</span>;          <span class="comment">// سرعة الاصطدام (m/s)</span>
+  <span class="prop">impactAngle</span>: <span class="type">number</span>;       <span class="comment">// زاوية الاصطدام (degrees from vertical)</span>
+  <span class="prop">explosiveType</span>: <span class="type">string</span>;     <span class="comment">// نوع المتفجر (TNT, C4, ...)</span>
+}</div>
+
+<div class="section-header">
+    <h2 class="section-title">4.3 نموذج التربة (SoilProfile)</h2>
+</div>
+
+<p class="body-text">
+يُمثّل نموذج التربة المقطع العمودي للأرض فوق المنشأة، ويتكون من طبقات متعددة مرتبة من السطح إلى الأسفل. كل طبقة تتميز باسمها وسمكها والكثافة والمقاومة وعامل الاختراق، وهذه القيم تؤثر بشكل مباشر على حساب عمق اختراق القنبلة عبر التربة. النظام يدعم عددا غير محدود من الطبقات، مما يسمح بنمذجة تربة معقدة تتضمن رملا وطينا وصخرا بحسب الواقع.
+</p>
+
+<div class="code-block"><span class="kw">interface</span> <span class="type">SoilProfile</span> {
+  <span class="prop">layers</span>: <span class="type">SoilLayer</span>[];    <span class="comment">// مصفوفة الطبقات مرتبة من الأعلى للأسفل</span>
+}
+
+<span class="kw">interface</span> <span class="type">SoilLayer</span> {
+  <span class="prop">id</span>: <span class="type">string</span>;               <span class="comment">// معرّف فريد</span>
+  <span class="prop">name</span>: <span class="type">string</span>;             <span class="comment">// اسم الطبقة (Sand, Clay, Rock, ...)</span>
+  <span class="prop">thickness</span>: <span class="type">number</span>;        <span class="comment">// السمك (m)</span>
+  <span class="prop">density</span>: <span class="type">number</span>;          <span class="comment">// الكثافة (kg/m3)</span>
+  <span class="prop">strength</span>: <span class="type">number</span>;         <span class="comment">// المقاومة (MPa)</span>
+  <span class="prop">penetrationFactor</span>: <span class="type">number</span>; <span class="comment">// عامل الاختراق (معامل تجريبي)</span>
+  <span class="prop">color</span>: <span class="type">string</span>;            <span class="comment">// لون العرض في النموذج 3D</span>
+}</div>
+
+<div class="section-header">
+    <h2 class="section-title">4.4 نموذج المنشأة (Structure)</h2>
+</div>
+
+<p class="body-text">
+يُمثّل نموذج المنشأة الهيكل الإنشائي تحت الأرض الذي يُراد تحليل مستوى حمايته. يدعم النظام أربعة أنواع رئيسية من المنشآت: الهيكل الصندوقي (Box Structure) والهيكل القوسي (Arch Structure) والنفق الدائري (Circular Tunnel) والمنشأة متعددة الغرف (Multi Room Facility). لكل نوع أبعاد هندسية خاصة به، لكن جميع الأنواع تشترك في خصائص السماكات الإنشائية للسقف والجدران والأرضية.
+</p>
+
+<div class="code-block"><span class="kw">type</span> <span class="type">StructureType</span> = <span class="str">'box'</span> | <span class="str">'arch'</span> | <span class="str">'circular_tunnel'</span> | <span class="str">'multi_room'</span>;
+
+<span class="kw">interface</span> <span class="type">Structure</span> {
+  <span class="prop">type</span>: <span class="type">StructureType</span>;
+  <span class="prop">length</span>: <span class="type">number</span>;            <span class="comment">// الطول الكلي (m)</span>
+  <span class="prop">width</span>: <span class="type">number</span>;             <span class="comment">// العرض (m)</span>
+  <span class="prop">height</span>: <span class="type">number</span>;            <span class="comment">// الارتفاع (m)</span>
+  <span class="prop">depth</span>: <span class="type">number</span>;             <span class="comment">// عمق السقف تحت سطح الأرض (m)</span>
+  <span class="prop">roofThickness</span>: <span class="type">number</span>;     <span class="comment">// سماكة السقف (m)</span>
+  <span class="prop">wallThickness</span>: <span class="type">number</span>;     <span class="comment">// سماكة الجدران (m)</span>
+  <span class="prop">floorThickness</span>: <span class="type">number</span>;    <span class="comment">// سماكة الأرضية (m)</span>
+  <span class="prop">material</span>: <span class="type">string</span>;          <span class="comment">// مادة البناء (Concrete, Steel, ...)</span>
+  <span class="prop">rooms</span>?: <span class="type">Room</span>[];            <span class="comment">// الغرف (للمنشآت متعددة الغرف فقط)</span>
+  <span class="prop">archRadius</span>?: <span class="type">number</span>;       <span class="comment">// نصف قطر القوس (للهيكل القوسي فقط)</span>
+}</div>
+
+<div class="section-header">
+    <h2 class="section-title">4.5 نموذج النتائج (AnalysisResult)</h2>
+</div>
+
+<p class="body-text">
+يُمثّل نموذج النتائج مخرجات محرك الحسابات بعد تشغيل التحليل على بيانات المشروع. يحتوي على القيم المحسوبة الرئيسية مثل عمق الاختراق في التربة وموقع الانفجار وضغط الموجة الانفجارية والحمل الديناميكي الناتج وحالة المنشأة الإنشائية. هذه النتائج تُعرض في كل من النموذج ثلاثي الأبعاد (كمسميات وألوان على العناصر) ولوحة النتائج (كمجموعة من البطاقات والجداول) والتقرير الهندسي.
+</p>
+
+<div class="code-block"><span class="kw">interface</span> <span class="type">AnalysisResult</span> {
+  <span class="prop">penetrationDepth</span>: <span class="type">number</span>;      <span class="comment">// عمق الاختراق في التربة (m)</span>
+  <span class="prop">explosionPosition</span>: <span class="type">number</span>;    <span class="comment">// موقع الانفجار (عمق تحت السطح) (m)</span>
+  <span class="prop">blastPressure</span>: <span class="type">number</span>;       <span class="comment">// ضغط الموجة الانفجارية (kPa)</span>
+  <span class="prop">dynamicLoad</span>: <span class="type">number</span>;         <span class="comment">// الحمل الديناميكي على السقف (kN/m2)</span>
+  <span class="prop">structureStatus</span>: <span class="type">string</span>;     <span class="comment">// حالة المنشأة: SAFE / WARNING / FAIL</span>
+  <span class="prop">roofStress</span>: <span class="type">number</span>;          <span class="comment">// الإجهاد على السقف (MPa)</span>
+  <span class="prop">wallStress</span>: <span class="type">number</span>;           <span class="comment">// الإجهاد على الجدران (MPa)</span>
+  <span class="prop">safetyFactor</span>: <span class="type">number</span>;         <span class="comment">// معامل الأمان</span>
+  <span class="prop">timestamp</span>: <span class="type">string</span>;           <span class="comment">// تاريخ إجراء التحليل</span>
+}</div>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 5: النموذج ثلاثي الأبعاد -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 05</div>
+    <h1 class="chapter-title">النموذج ثلاثي الأبعاد</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">5.1 محرك التصور ثلاثي الأبعاد</h2>
+</div>
+
+<p class="body-text">
+يُشكّل النموذج ثلاثي الأبعاد واجهة المراجعة الرئيسية في نظام UPAS، وهو ليس مجرد عنصر عرض تجميلي بل هو الأداة الأساسية التي يرى من خلالها المهندس والمراجع جميع البيانات الهندسية في سياقها المكاني الحقيقي. المبدأ الأساسي هو أن كل قيمة هندسية في النظام يجب أن تكون مرتبطة بعنصر مرئي في النموذج ثلاثي الأبعاد يمكن اختياره واستعراض بياناته، مما يخلق تجربة مراجعة هندسية شاملة ومتكاملة.
+</p>
+
+<p class="body-text">
+يُبنى المحرك على Three.js عبر طبقة الت abstraction التي يوفرها React Three Fiber (R3F)، مما يسمح بدمج العناصر ثلاثية الأبعاد كـ مكونات React طبيعية تتفاعل مع حالة التطبيق. مكتبة Drei توفر مكونات جاهزة مثل OrbitControls للتدوير والتكبير و Text3D للتسميات و Html للتراكبات (Overlays) التي تُعرض بيانات العناصر عند الاختيار.
+</p>
+
+<div class="info-box">
+    <div class="info-box-title">قاعدة ذهبية</div>
+    لا تضع أي منطق هندسي أو حسابات داخل مكونات التصور ثلاثي الأبعاد. المكونات ثلاثية الأبعاد مسؤولة فقط عن "العرض" وتستقبل بياناتها جاهزة من نماذج البيانات أو نتائج الحسابات.
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">5.2 المكونات ثلاثية الأبعاد</h2>
+</div>
+
+<p class="body-text">
+يتكون المحرك ثلاثي الأبعاد من مجموعة من المكونات المتخصصة، كل مسؤول عن عرض نوع معين من العناصر الهندسية. هذه المكونات موجودة في المجلد <code>components/3d/</code> وتُستدعى من المكون الرئيسي <code>Scene3D</code> الذي يُدير المشهد بأكمله. فيما يلي قائمة المكونات مع وصف مسؤولية كل منها.
+</p>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>المكون</th>
+                <th>المسؤولية</th>
+                <th>التفاعلات</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>Scene3D</code></td>
+                <td>إدارة المشهد الكلي والإضاءة والكاميرا</td>
+                <td>يستضيف جميع المكونات الفرعية</td>
+            </tr>
+            <tr>
+                <td><code>Terrain</code></td>
+                <td>عرض سطح الأرض كطائرة نصية شفافة</td>
+                <td>إظهار/إخفاء، تعديل الشفافية</td>
+            </tr>
+            <tr>
+                <td><code>SoilLayers</code></td>
+                <td>عرض طبقات التربة بألوان وأبعاد مختلفة</td>
+                <td>اختيار طبقة لعرض بياناتها</td>
+            </tr>
+            <tr>
+                <td><code>BombModel</code></td>
+                <td>عرض القنبلة (أسطوانة) مع مسار الحركة</td>
+                <td>تدوير، عرض المواصفات عند الاختيار</td>
+            </tr>
+            <tr>
+                <td><code>PenetrationPath</code></td>
+                <td>عرض مسار الاختراق عبر طبقات التربة</td>
+                <td>خط متدرج يوضح العمق</td>
+            </tr>
+            <tr>
+                <td><code>ExplosionPoint</code></td>
+                <td>عرض موقع الانفجار ككرة متوهجة</td>
+                <td>تأثير بصري ديناميكي</td>
+            </tr>
+            <tr>
+                <td><code>BlastZone</code></td>
+                <td>عرض نطاق تأثير الانفجار ككرة شفافة</td>
+                <td>تعديل نصف القطر، الشفافية</td>
+            </tr>
+            <tr>
+                <td><code>StructureModel</code></td>
+                <td>عرض المنشأة تحت الأرض (صندوق/قوس/نفق)</td>
+                <td>اختيار لعرض السماكات والمواد</td>
+            </tr>
+            <tr>
+                <td><code>Dimensions</code></td>
+                <td>عرض الأبعاد والسماكات كتسميات هندسية</td>
+                <td>إظهار/إخفاء حسب وضع المراجعة</td>
+            </tr>
+            <tr>
+                <td><code>Labels</code></td>
+                <td>تسميات نصية للعناصر (أسماء الطبقات، إلخ)</td>
+                <td>موضوعة دائما نحو الكاميرا (Billboarding)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">5.3 وضع المراجعة الهندسية (Engineering Review Mode)</h2>
+</div>
+
+<p class="body-text">
+يوفر النظام وضع مراجعة هندسية خاص (Engineering Review Mode) يُفعّل عند طلب المراجع أو المهندس، ويعرض جميع المعلومات الهندسية التفصيلية مباشرة على النموذج ثلاثي الأبعاد. في هذا الوضع، يظهر كل بعد هندسي وكل سماكة إنشائية كتسمية مرقمة مرتبطة بعنصرها بخط مرجعي. كما تُعرض المحاور الإحداثية ونقاط الحساب والأحمال المطبقة والنتائج المحسوبة في مواقعها الصحيحة على النموذج.
+</p>
+
+<p class="body-text">
+يتميز وضع المراجعة عن الوضع العادي بتفعيل مكونات إضافية مثل <code>Dimensions</code> الذي يرسم خطوط الأبعاد مع القيم، ومكون <code>LoadIndicators</code> الذي يعرض الأسهم الاتجاهية للأحمال، ومكون <code>ResultOverlay</code> الذي يُلوّن عناصر المنشأة حسب حالة الأمان (أخضر للآمن، أصفر للتحذير، أحمر للفشل). هذا الوضع يُعد أداة مراجعة احترافية تُغني عن الحاجة لمراجعة الأرقام في جداول منفصلة.
+</p>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 6: الوحدات البرمجية -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 06</div>
+    <h1 class="chapter-title">الوحدات البرمجية</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">6.1 إدارة المشاريع (Project Management)</h2>
+</div>
+
+<p class="body-text">
+وحدة إدارة المشاريع هي نقطة الدخول الرئيسية للنظام، حيث تتيح للمستخدم إنشاء مشاريع جديدة وحفظها وفتحها وحذفها وتصديرها. كل مشروع يُخزّن ككائن JSON متكامل في LocalStorage في المرحلة الأولى، مع إمكانية تصديره كملف JSON منفصل يمكن استيراده لاحقا. هذه الوحدة تعتمد على خدمة <code>projectService</code> التي تُجرّد عمليات التخزين عن باقي النظام، مما يُسهّل الانتقال إلى تخزين الخادم في المرحلة الثانية.
+</p>
+
+<p class="body-text">
+تتضمن هذه الوحدة صفحة لوحة التحكم (Dashboard) التي تعرض قائمة بجميع المشاريع المحفوظة مع معلومات ملخصة عن كل مشروع (الاسم، تاريخ الإنشاء، الحالة). كما توفر إمكانية البحث والتصفية حسب الاسم أو التاريخ. عند اختيار مشروع، يُحمّل النظام بياناته الكاملة ويوجّه المستخدم إما إلى معالج التعديل أو إلى واجهة التحليل ثلاثي الأبعاد حسب حالة المشروع.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.2 تعريف التهديد (Threat Definition)</h2>
+</div>
+
+<p class="body-text">
+تتيح وحدة تعريف التهديد للمستخدم اختيار سيناريو التهديد وإدخال بيانات القنبلة المستخدمة. يدعم النظام ثلاثة أنواع من السيناريوهات: سيناريو الاختراق (Penetrating Threat) حيث تخترق القنبلة التربة وتنفجر قرب المنشأة، وسيناريو الانفجار السطحي (Surface Explosion) حيث يحدث الانفجار على سطح الأرض مباشرة، وسيناريو مخصص (Custom Scenario) يمكن فيه تحديد موقع الانفجار يدويا.
+</p>
+
+<p class="body-text">
+لتبسيط إدخال البيانات، يحتوي النظام على قاعدة بيانات محلية (<code>bombs.json</code>) تضم مواصفات القنابل الشائعة مع جميع بياناتها الفيزيائية. يمكن للمستخدم اختيار قنبلة من القائمة لملء الحقول تلقائيا، ثم تعديل أي قيمة حسب الحاجة. هذا النهج يوفر الوقت ويقلل من احتمال إدخال بيانات خاطئة، مع الحفاظ على المرونة الكاملة لتعريف تهديدات مخصصة.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.3 نموذج التربة (Soil Model)</h2>
+</div>
+
+<p class="body-text">
+تتيح وحدة نموذج التربة للمستخدم تعريف المقطع العمودي للتربة فوق المنشأة كعدد من الطبقات المتتالية. الواجهة تعرض الطبقات بصريا من الأعلى إلى الأسفل، مع إمكانية إضافة طبقة جديدة أو حذف طبقة موجودة أو تعديل بيانات أي طبقة. كل طبقة تتطلب اسمها ونوعها (رمل، طين، صخر) وسمكها وكثافتها ومقاومتها وعامل اختراقها.
+</p>
+
+<p class="body-text">
+مشابهة لوحدة التهديد، يحتوي النظام على قاعدة بيانات محلية لأنواع التربة الشائعة (<code>soils.json</code>) تحتوي على القيم الافتراضية لكل نوع (كثافة الرمل، مقاومة الصخر، إلخ). عند اختيار نوع التربة، تُملأ الحقول بالقيم الافتراضية ويمكن تعديلها. هذا يُسرّع عملية الإدخال ويضمن استخدام قيم هندسية معقولة كنقطة بداية.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.4 نموذج المنشأة (Structure Model)</h2>
+</div>
+
+<p class="body-text">
+تتيح وحدة نموذج المنشأة للمستخدم تعريف الهندسة الإنشائية للمرفق تحت الأرض. تبدأ الواجهة باختيار نوع المنشأة من الأنواع المدعومة الأربعة: الهيكل الصندوقي للغرف والملجآت، والهيكل القوسي للأنفاق ذات السقف المقوس، والنفق الدائري للأنفاق الأسطوانية، والمنشأة متعدد الغرف للمجمعات تحت الأرض المعقدة. لكل نوع، تعرض الواجهة حقول الإدخال المناسبة مع رسم توضيحي مبسط يتحديث فوريا مع تغيير الأبعاد.
+</p>
+
+<p class="body-text">
+من أهم خصائص هذه الوحدة القدرة على معاينة المنشأة ثلاثي الأبعاد أثناء الإدخال (Live Preview)، حيث يتحديث النموذج في المشهد ثلاثي الأبعاد فوريا مع كل تغيير في الأبعاد أو السماكات. هذا يمنح المستخدم رؤية فورية لمدى واقعية المنشأة ويساعده في اكتشاف الأخطاء مبكرا قبل تشغيل التحليل.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.5 محرك الحسابات الهندسية (Calculation Engine)</h2>
+</div>
+
+<div class="critical-box">
+    <div class="info-box-title">قاعدة حمراء - لا تضع الحسابات داخل المكونات</div>
+    محرك الحسابات الهندسية يجب أن يكون مستقلا تماما عن واجهة المستخدم. لا يجوز استدعاء معادلات حسابية من داخل مكونات React أو المكونات ثلاثية الأبعاد. جميع الحسابات تتم في الملفات الموجودة تحت <code>engineering/calculations/</code> وتُستدعى عبر طبقة الخدمات (<code>services/calculationService.ts</code>).
+</div>
+
+<p class="body-text">
+محرك الحسابات هو العقل التحليلي للنظام، ويحتوي على المعادلات والخوارزميات الهندسية المستخدمة في تحليل مدى حماية المنشأة تحت الأرض. يتم تنظيم المحرك كوحدات مستقلة (Modules) بحسب نوع الحساب: وحدة الاختراق (<code>penetration.ts</code>) التي تحسب عمق اختراق القذيفة في التربة باستخدام معادلات مثل معادلة Young، ووحدة الانفجار (<code>blast.ts</code>) التي تحسب ضغط الموجة الانفجارية ومداها، ووحدة المنشأة (<code>structure.ts</code>) التي تحسب الإجهادات والأحمال على العناصر الإنشائية، ووحدة السلامة (<code>safety.ts</code>) التي تقيم الحالة الإجمالية للمنشأة.
+</p>
+
+<div class="code-block"><span class="comment">// engineering/calculations/penetration.ts</span>
+<span class="kw">export function</span> <span class="type">calculatePenetration</span>(
+  <span class="prop">bomb</span>: <span class="type">Bomb</span>,
+  <span class="prop">soilLayers</span>: <span class="type">SoilLayer</span>[]
+): <span class="type">PenetrationResult</span> {
+  <span class="comment">// حساب عمق الاختراق عبر كل طبقة</span>
+  <span class="comment">// باستخدام معادلة Young أو ما يعادلها</span>
+  <span class="comment">// إرجاع: عمق الاختراق الكلي، الطبقة المتوقف فيها</span>
+}
+
+<span class="comment">// engineering/calculations/blast.ts</span>
+<span class="kw">export function</span> <span class="type">calculateBlastPressure</span>(
+  <span class="prop">explosiveMass</span>: <span class="type">number</span>,
+  <span class="prop">distance</span>: <span class="type">number</span>,
+  <span class="prop">explosiveType</span>: <span class="type">string</span>
+): <span class="type">BlastResult</span> {
+  <span class="comment">// حساب ضغط الموجة الانفجارية</span>
+  <span class="comment">// حساب الحمل الديناميكي على السقف</span>
+}
+
+<span class="comment">// engineering/calculations/safety.ts</span>
+<span class="kw">export function</span> <span class="type">evaluateSafety</span>(
+  <span class="prop">structuralResults</span>: <span class="type">StructureResult</span>,
+  <span class="prop">designCapacity</span>: <span class="type">number</span>
+): <span class="type">SafetyResult</span> {
+  <span class="comment">// حساب معامل الأمان</span>
+  <span class="comment">// تحديد الحالة: SAFE / WARNING / FAIL</span>
+}</div>
+
+<p class="body-text">
+يتم استدعاء محرك الحسابات من خلال خدمة مركزية (<code>calculationService.ts</code>) تتلقى كائن المشروع الكامل وتُرجع كائن النتائج. هذه الخدمة هي نقطة الاتصال الوحيدة بين الواجهة ومحرك الحسابات، مما يضمن الفصل التام بين الطبقتين ويسمح باستبدال أو تحسين المعادلات المستخدمة دون التأثير على واجهة المستخدم.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.6 لوحة النتائج (Results Dashboard)</h2>
+</div>
+
+<p class="body-text">
+تعرض لوحة النتائج ملخصا شاملا لنتائج التحليل بطريقة مرئية واضحة تتيح للمهندس تقييم حالة المنشأة بسرعة. تبدأ اللوحة بشريط الحالة العام الذي يعرض نتيجة التحليل بألوان مميزة: أخضر للآمن (SAFE)، أصفر للتحذير (WARNING)، أو أحمر للفشل (FAIL). ثم تعرض مجموعة من البطاقات والجداول التي تفصل نتائج كل جزء من التحليل.
+</p>
+
+<p class="body-text">
+تشمل اللوحة أربعة أقسام رئيسية: قسم ملخص المشروع الذي يعرض الحالة العامة، وقسم نتائج التهديد الذي يعرض بيانات القنبلة وعمق الاختراق وموقع الانفجار، وقسم النتائج الإنشائية الذي يعرض الإجهادات على السقف والجدران والأحمال المطبقة ومعامل الأمان، وقسم التوصيات الذي يقترح إجراءات تحسين بناء على النتائج. كل رقم في اللوحة مرتبط بعنصر مرئي في النموذج ثلاثي الأبعاد يمكن النقر عليه للانتقال مباشرة إلى العنصر المقابل.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">6.7 نظام التقارير (Reporting System)</h2>
+</div>
+
+<p class="body-text">
+يتولى نظام التقارير إنتاج تقرير هندسي شامل بصيغة PDF يتضمن جميع بيانات المشروع ونتائج التحليل وصورا من النموذج ثلاثي الأبعاد. التقرير مُصمم ليكون وثيقة قابلة للتقديم يمكن مشاركتها مع الجهات المعنية أو أرشفتها كجزء من التوثيق الهندسي. يتضمن التقرير سبعة أقسام مرتبة هي: بيانات المشروع، وبيانات التهديد، وبيانات التربة، وبيانات المنشأة، وصور ثلاثية الأبعاد، ونتائج التحليل، والملاحظات.
+</p>
+
+<p class="body-text">
+يتم التقاط صور النموذج ثلاثي الأبعاد تلقائيا من عدة زوايا محددة مسبقا عند إنشاء التقرير، مما يضمن تضمين مناظر شاملة للتحليل. يمكن للمستخدم أيضا إضافة ملاحظات نصية تظهر في قسم الملاحظات من التقرير، وهو أمر مهم لبيئة المراجعة حيث يحتاج المراجع إلى توثيق ملاحظاته وموافقته ضمن التقرير نفسه.
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 7: مكونات الواجهة -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 07</div>
+    <h1 class="chapter-title">مكونات الواجهة</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">7.1 لوحة التحكم (Dashboard)</h2>
+</div>
+
+<p class="body-text">
+لوحة التحكم هي الصفحة الرئيسية التي تظهر للمستخدم بعد تسجيل الدخول، وتتضمن قائمة بجميع المشاريع المحفوظة مع إمكانية إنشاء مشروع جديد. التصميم الهندسي للوحة التحكم يراعي البساطة والوضوح، حيث تعرض كل بطاقة مشروع الاسم وتاريخ الإنشاء والحالة (مسودة، مكتمل البيانات، محلل) مع أزرار سريعة لفتح المشروع أو حذفه أو تصديره.
+</p>
+
+<p class="body-text">
+تتضمن اللوحة أيضا شريط بحث يسمح بتصفية المشاريع حسب الاسم، مع إمكانية ترتيبها حسب التاريخ أو الاسم. في أعلى الصفحة يوجد زر "مشروع جديد" بارز يبدأ معالج المشروع. بالنسبة لمستخدمي فئة المراجع، تعرض اللوحة جميع المشاريع في النظام مع إمكانية إضافة ملاحظات على أي مشروع.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">7.2 معالج المشروع (Project Wizard)</h2>
+</div>
+
+<p class="body-text">
+معالج المشروع هو الواجهة الرئيسية لإدخال البيانات، ويعمل كمسار متسلسل (Stepper) من خمس خطوات: التهديد، التربة، المنشأة، التحليل، والنتائج. كل خطوة تعرض نموذج إدخال متخصص مع التحقق من صحة البيانات قبل الانتقال للخطوة التالية. يمكن للمستخدم التنقل بين الخطوات بحرية لتعديل البيانات السابقة في أي وقت.
+</p>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>الخطوة</th>
+                <th>العنوان</th>
+                <th>المحتوى</th>
+                <th>التحقق المطلوب</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>تعريف التهديد</td>
+                <td>اختيار السيناريو وإدخال بيانات القنبلة</td>
+                <td>الكتلة، السرعة، زاوية الاصطدام</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>تعريف التربة</td>
+                <td>إضافة طبقات التربة مع خصائصها</td>
+                <td>طبقة واحدة على الأقل، سمك إجمالي منطقي</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>تعريف المنشأة</td>
+                <td>اختيار النوع وإدخال الأبعاد والسماكات</td>
+                <td>الأبعاد موجبة، السماكات منطقية</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>تشغيل التحليل</td>
+                <td>مراجعة البيانات وتشغيل محرك الحسابات</td>
+                <td>جميع البيانات مكتملة</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>عرض النتائج</td>
+                <td>النتائج في النموذج 3D ولوحة النتائج</td>
+                <td>لا يوجد</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">7.3 واجهة التحليل ثلاثي الأبعاد</h2>
+</div>
+
+<p class="body-text">
+واجهة التحليل ثلاثي الأبعاد هي الصفحة الأهم في النظام، حيث يظهر المشروع كله في مشهد ثلاثي الأبعاد تفاعلي. تخطيط الصفحة يتضمن المشهد ثلاثي الأبعاد في المنتصف كعنصر رئيسي يستهلك معظم مساحة الشاشة، مع شريط جانبي (Sidebar) يعرض بيانات العنصر المختار وأدوات التحكم بالعرض (إظهار/إخفاء الطبقات، تفعيل وضع المراجعة، التقاط صور).
+</p>
+
+<p class="body-text">
+يدعم المشهد التفاعلات التالية: التدوير (Rotate) حول النموذج، والتكبير والتصغير (Zoom)، والتحريك الأفقي (Pan)، وإخفاء وإظهار طبقات التربة بشكل مستقل، واختيار أي عنصر ثلاثي الأبعاد لعرض بياناته، وعرض الأبعاد والسماكات الهندسية، وإنشاء مقاطع عرضية (Sections) لرؤية المقطع الداخلي للمنشأة. هذه التفاعلات تُنفذ عبر أدوات Drei مثل OrbitControls و Select و Html.
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 8: تنظيم الكود -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 08</div>
+    <h1 class="chapter-title">تنظيم الكود</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">8.1 هيكل المجلدات التفصيلي</h2>
+</div>
+
+<p class="body-text">
+يُعد تنظيم المجلدات أساس البنية البرمجية للنظام، حيث يُحدد مكان كل ملف وعلاقته بباقي الملفات. تم تصميم الهيكل بحيث يعكس معمارية الطبقات الموضحة سابقا، بحيث يكون كل مجلد مسؤولا عن نطاق محدد من المسؤوليات. الفصل الواضح بين المجلدات يُسهّل على المطورين العثور على أي ملف وفهم دوره بسرعة.
+</p>
+
+<div class="diagram-container">
+    <img src="diagrams/folder_structure.png" alt="Folder Structure">
+    <div class="diagram-caption">شكل 4: هيكل المجلدات التفصيلي لمشروع UPAS</div>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>المجلد</th>
+                <th>المسؤولية</th>
+                <th>أمثلة المحتويات</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>components/ui/</code></td>
+                <td>مكونات واجهة المستخدم العامة القابلة لإعادة الاستخدام</td>
+                <td>Button, Input, Card, Modal, Select, Tabs</td>
+            </tr>
+            <tr>
+                <td><code>components/3d/</code></td>
+                <td>مكونات التصور ثلاثي الأبعاد</td>
+                <td>Scene3D, Terrain, SoilLayers, BombModel</td>
+            </tr>
+            <tr>
+                <td><code>components/forms/</code></td>
+                <td>نماذج إدخال البيانات المتخصصة</td>
+                <td>ThreatForm, SoilForm, StructureForm</td>
+            </tr>
+            <tr>
+                <td><code>components/layout/</code></td>
+                <td>مكونات الهيكل العام للصفحات</td>
+                <td>Sidebar, Header, Wizard, PageContainer</td>
+            </tr>
+            <tr>
+                <td><code>pages/</code></td>
+                <td>الصفحات الرئيسية للتطبيق</td>
+                <td>Dashboard, ProjectView, AnalysisView</td>
+            </tr>
+            <tr>
+                <td><code>models/</code></td>
+                <td>تعريفات TypeScript لجميع الكيانات</td>
+                <td>Project, Threat, Soil, Structure, AnalysisResult</td>
+            </tr>
+            <tr>
+                <td><code>engineering/</code></td>
+                <td>محرك الحسابات الهندسية (مستقل عن UI)</td>
+                <td>penetration.ts, blast.ts, structure.ts, safety.ts</td>
+            </tr>
+            <tr>
+                <td><code>services/</code></td>
+                <td>طبقة الخدمات التي تربط UI بالبيانات والحسابات</td>
+                <td>projectService.ts, calculationService.ts</td>
+            </tr>
+            <tr>
+                <td><code>database/</code></td>
+                <td>ملفات البيانات المرجعية (JSON)</td>
+                <td>bombs.json, soils.json, materials.json</td>
+            </tr>
+            <tr>
+                <td><code>store/</code></td>
+                <td>إدارة الحالة المركزية (Zustand)</td>
+                <td>projectStore.ts, uiStore.ts</td>
+            </tr>
+            <tr>
+                <td><code>hooks/</code></td>
+                <td>خطافات React مخصصة</td>
+                <td>useProject.ts, use3D.ts, useAnalysis.ts</td>
+            </tr>
+            <tr>
+                <td><code>utils/</code></td>
+                <td>أدوات مساعدة عامة</td>
+                <td>formatters.ts, validators.ts, constants.ts</td>
+            </tr>
+            <tr>
+                <td><code>types/</code></td>
+                <td>تعريفات الأنواع المشتركة</td>
+                <td>index.ts - جميع الواجهات والأنواع</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">8.2 قواعد تنظيم الكود</h2>
+</div>
+
+<p class="body-text">
+لضمان اتساق الكود وجودته عبر مراحل التطوير المختلفة وبين المطورين المختلفين، تم وضع مجموعة من القواعد الصارمة لتنظيم الكود. هذه القواعد ليست مقترحات بل هي متطلبات إلزامية يجب الالتزام بها من البداية لتجنب التراكم التقني (Technical Debt) الذي يُصعّب التطوير والصيانة لاحقا.
+</p>
+
+<div class="critical-box">
+    <div class="info-box-title">قواعد إلزامية</div>
+    <ul style="margin: 6px 16px;">
+        <li><strong>الفصل التام:</strong> لا تضع أي منطق حسابي داخل مكونات React. الحسابات في <code>engineering/</code> فقط.</li>
+        <li><strong>لا قيم صلبة:</strong> جميع القيم الهندسية (معاملات، كثافات، مقاومات) في ملفات JSON تحت <code>database/</code>.</li>
+        <li><strong>واجهات صارمة:</strong> كل دالة وكل مكون يجب أن يكون له نوع TypeScript صريح.</li>
+        <li><strong>مكونات صغيرة:</strong> كل مكون React يجب أن يكون مسؤولا عن شيء واحد فقط (Single Responsibility).</li>
+        <li><strong>خدمات كوسيط:</strong> لا تصل المكونات مباشرة إلى التخزين أو الحسابات. استخدم <code>services/</code>.</li>
+    </ul>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 9: طريقة التطوير -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 09</div>
+    <h1 class="chapter-title">طريقة التطوير</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">9.1 مبادئ التطوير</h2>
+</div>
+
+<p class="body-text">
+يتبع مشروع UPAS مجموعة من المبادئ الهندسية التي تضمن إنتاج كود عالي الجودة وقابل للصيانة والتوسع. هذه المبادئ مستوحاة من أفضل الممارسات في هندسة البرمجيات وتناسب خصوصية التطبيقات الهندسية التي تتطلب دقة في الحسابات ومرونة في العرض. الالتزام بهذه المبادئ من البداية يُقلل من تكلفة التطوير على المدى الطويل ويجعل إضافة الميزات الجديدة أمرا يسيرا.
+</p>
+
+<p class="body-text">
+أول هذه المبادئ هو المعمارية المعيارية (Modular Architecture) التي تقتضي تقسيم النظام إلى وحدات مستقلة يمكن تطويرها واختبارها بشكل منفصل. كل وحدة لها مدخلات ومخرجات محددة بوضوح ولا تعتمد على تفاصيل الوحدات الأخرى. ثاني المبادئ هو قابلية التوسع (Scalability) التي تعني أن إضافة نوع جديد من المنشآت أو معادلة حسابية جديدة يجب أن تكون عملية محدودة النطاق لا تتطلب تعديل النظام بأكمله.
+</p>
+
+<p class="body-text">
+ثالث المبادئ هو فصل الواجهة عن الحسابات (Separation of Concerns) الذي يضمن أن منطق التحليل الهندسي مستقل تماما عن طريقة عرض النتائج، بحيث يمكن تغيير واجهة المستخدم بالكامل دون التأثير على دقة الحسابات. رابع المبادئ هو فصل البيانات عن الكود (Data-Code Separation) الذي يمنع تضمين القيم الهندسية الصلبة داخل الكود البرمجي ويجعلها قابلة للتعديل عبر ملفات البيانات الخارجية.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">9.2 إدارة الحالة (State Management)</h2>
+</div>
+
+<p class="body-text">
+تُدار حالة التطبيق باستخدام Zustand وهي مكتبة إدارة حالة خفيفة الوزن توفر واجهة برمجية بسيطة وأداء عاليا. تم تقسيم الحالة إلى مخزنين رئيسيين: مخزن المشروع (<code>projectStore</code>) الذي يحتفظ ببيانات المشروع الحالي وجميع كياناته (التهديد، التربة، المنشأة، النتائج)، ومخزن الواجهة (<code>uiStore</code>) الذي يحتفظ بحالة العناصر المرئية مثل العنصر المختار في النموذج ثلاثي الأبعاد ووضع المراجعة ونشاط الطبقات.
+</p>
+
+<p class="body-text">
+هذا الفصل بين مخزن البيانات ومخزن الواجهة يضمن أن تغييرات الحالة المرئية (مثل اختيار عنصر في المشهد) لا تؤثر على بيانات المشروع، والعكس صحيح. كما يُسهّل عملية الحفظ حيث يكفي حفظ محتوى <code>projectStore</code> دون الحاجة لحفظ حالة الواجهة المؤقتة.
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 10: مراحل التنفيذ -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 10</div>
+    <h1 class="chapter-title">مراحل التنفيذ</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<p class="body-text">
+يُقسّم تطوير نظام UPAS إلى أربع مراحل متسلسلة، كل مرحلة تبني على مخرجات المرحلة السابقة. يتم التركيز على إتمام كل مرحلة بالكامل واختبارها قبل الانتقال إلى المرحلة التالية، وذلك وفق مبدأ "ابدأ صغيرا وتأكد من الأساس قبل التوسع". هذه المراحل مُصممة بحيث تنتج كل منها نظاما قابلا للاستخدام بشكل مستقل، وليس مجرد خطوات وسيطة لا قيمة لها بذاتها.
+</p>
+
+<div class="phase-item">
+    <div class="phase-number">1</div>
+    <div class="phase-content">
+        <div class="phase-title">المرحلة الأولى: النموذج الأولي (Prototype)</div>
+        <p class="body-text">
+        تركز هذه المرحلة على بناء الأساس التقني والهيكلي للنظام. تشمل إنشاء مشروع React مع TypeScript و Vite، وإعداد البنية التحتية للمجلدات والأنواع، وبناء مشهد ثلاثي الأبعاد أساسي يعرض التضاريس والمنشأة، وإنشاء نماذج إدخال البيانات لجميع الكيانات (التهديد، التربة، المنشأة)، وتوفير حفظ واسترجاع حالة المشروع محليا. لا تتضمن هذه المرحلة محرك الحسابات الفعلي بل توفر مواضع فارغة (Placeholders) لواجهاته.
+        </p>
+    </div>
+</div>
+
+<div class="phase-item">
+    <div class="phase-number">2</div>
+    <div class="phase-content">
+        <div class="phase-title">المرحلة الثانية: محرك الحسابات (Calculation Engine)</div>
+        <p class="body-text">
+        تُبنى في هذه المرحلة المعادلات الهندسية الحقيقية داخل محرك الحسابات. تشمل تنفيذ معادلات حساب عمق الاختراق (مثل معادلة Young)، ومعادلات حساب ضغط الانفجار والملحم الديناميكي، ومعادلات تحليل الإجهاد في عناصر المنشأة، وخوارزمية تقييم السلامة وإنتاج الحالة النهائية (SAFE/WARNING/FAIL). كما تشمل ربط المحرك بواجهة المستخدم وعرض النتائج في النموذج ثلاثي الأبعاد ولوحة النتائج.
+        </p>
+    </div>
+</div>
+
+<div class="phase-item">
+    <div class="phase-number">3</div>
+    <div class="phase-content">
+        <div class="phase-title">المرحلة الثالثة: الإدارة والتقارير (Management & Reports)</div>
+        <p class="body-text">
+        تُضاف في هذه المرحلة قدرات إدارة المستخدمين مع نظام الصلاحيات (User/Reviewer)، وقاعدة بيانات PostgreSQL مع REST API لحفظ المشاريع على الخادم، ونظام التقارير لإنتاج تقرير PDF شامل يتضمن صورا من النموذج ثلاثي الأبعاد. هذه المرحلة تحول النظام من أداة فردية إلى منصة جماعية تدعم عمل الفرق الهندسية.
+        </p>
+    </div>
+</div>
+
+<div class="phase-item">
+    <div class="phase-number">4</div>
+    <div class="phase-content">
+        <div class="phase-title">المرحلة الرابعة: التكامل المتقدم (Advanced Integration)</div>
+        <p class="body-text">
+        تشمل هذه المرحلة إضافة ميزات متقدمة مثل تحسين أداء التصور ثلاثي الأبعاد للمنشآت المعقدة، ودعم التصدير بصيغ CAD (مثل DXF)، والتكامل مع أنظمة BIM، وإضافة أنواع تحليل إضافية، وتحسينات الأداء والتخزين المؤقت. هذه المرحلة هي مرحلة التطوير المستمر الذي يستمر بناء على احتياجات المستخدمين الفعلية.
+        </p>
+    </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!-- CHAPTER 11: معايير القبول -->
+<!-- ============================================================ -->
+<div class="chapter-header">
+    <div class="chapter-number">CHAPTER 11</div>
+    <h1 class="chapter-title">معايير القبول</h1>
+    <div class="chapter-divider"></div>
+</div>
+
+<div class="section-header">
+    <h2 class="section-title">11.1 معايير قبول المرحلة الأولى</h2>
+</div>
+
+<p class="body-text">
+تُعرّف معايير القبول (Acceptance Criteria) للمرحلة الأولى على أنها الشروط التي يجب أن يحققها النظام لاعتباره ناجحا وجاهزا للانتقال إلى المرحلة الثانية. هذه المعايير قابلة للقياس والملاحظة ويمكن اختبارها مباشرة من خلال استخدام النظام. النظام الذي يحقق جميع هذه المعايير يُعتبر نموذجا أوليا ناجحا يُثبت صحة المعمارية المختارة وجدوى المفهوم.
+</p>
+
+<div class="section-header">
+    <h2 class="section-title">11.2 قائمة الفحص الشاملة</h2>
+</div>
+
+<div class="checklist">
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المستخدم يستطيع إنشاء مشروع جديد وتسميته</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المستخدم يستطيع إدخال بيانات التهديد (القنبلة) عبر النموذج المخصص</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المستخدم يستطيع تعريف طبقات التربة متعددة مع خصائص كل طبقة</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المستخدم يستطيع تعريف المنشأة مع اختيار النوع وإدخال الأبعاد والسماكات</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> يظهر نموذج ثلاثي الأبعاد يعرض التربة والمنشأة والتهديد معا</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المستخدم يستطيع تدوير النموذج ثلاثي الأبعاد وتكبيره وتصغيره</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> تظهر الأبعاد والسماكات الهندسية على النموذج ثلاثي الأبعاد</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> عند اختيار عنصر في النموذج ثلاثي الأبعاد تظهر بياناته</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> حفظ حالة المشروع واسترجاعها يعملان بشكل صحيح</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> الواجهة تعرض بشكل صحيح باللغة العربية (RTL)</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> الكود يتبع قواعد الفصل المحددة (لا حسابات في المكونات)</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> جميع القيم الهندسية في ملفات JSON وليست صلبة في الكود</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> النموذج ثلاثي الأبعاد يستجيب بسلاسة (60 إطارا في الثانية كحد أدنى)</div>
+    <div class="checklist-item"><span class="check-icon">[ ]</span> المشروع يعمل على المتصفحات الرئيسية (Chrome, Firefox, Edge)</div>
+</div>
+
+<div class="info-box" style="margin-top: 30px;">
+    <div class="info-box-title">الخطوة التالية</div>
+    بعد موافقتك على هذه المعمارية، سيتم البدء بتنفيذ المرحلة الأولى وفق الترتيب المحدد في القسم 10. لن يُكتب أي كود قبل الحصول على موافقتك المسبقة على هذه الوثيقة.
+</div>
+
+</div><!-- end main-content -->
+
+</body>
+</html>
