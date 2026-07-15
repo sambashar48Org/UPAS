@@ -525,6 +525,173 @@ html, body {
     flex-shrink: 0;
 }
 
+/* ======================== IMPLEMENTATION DIRECTIVE ======================== */
+.directive-page {
+    break-after: page;
+    padding: 40px 50px;
+    background: #f8fafc;
+}
+
+.directive-header {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9pt;
+    color: var(--c-accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.directive-main-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 20pt;
+    font-weight: 800;
+    color: var(--c-primary);
+    margin-bottom: 4px;
+}
+
+.directive-subtitle {
+    font-family: 'Noto Sans Arabic', sans-serif;
+    font-size: 12pt;
+    color: var(--c-text-muted);
+    margin-bottom: 20px;
+}
+
+.directive-divider {
+    width: 50px;
+    height: 3px;
+    background: var(--c-accent);
+    margin-bottom: 24px;
+}
+
+.directive-role {
+    background: var(--c-primary);
+    color: #ffffff;
+    padding: 14px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 11pt;
+    line-height: 1.7;
+}
+
+.directive-role strong {
+    color: #60a5fa;
+}
+
+.directive-section {
+    margin-bottom: 20px;
+    break-inside: avoid;
+}
+
+.directive-section-title {
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-size: 12pt;
+    font-weight: 700;
+    color: var(--c-primary);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--c-accent);
+    display: inline-block;
+}
+
+.directive-section-body {
+    font-size: 10.5pt;
+    line-height: 1.7;
+    color: var(--c-text);
+}
+
+.directive-section-body ul {
+    margin: 6px 20px 6px 0;
+    padding-right: 16px;
+}
+
+.directive-section-body li {
+    margin-bottom: 3px;
+}
+
+.directive-section-body code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9pt;
+    background: #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--c-primary);
+}
+
+.directive-highlight {
+    background: #eff6ff;
+    border-right: 3px solid var(--c-accent);
+    padding: 10px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0;
+    font-size: 10.5pt;
+}
+
+.directive-warning {
+    background: #fef2f2;
+    border-right: 3px solid var(--c-danger);
+    padding: 10px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0;
+    font-size: 10.5pt;
+    color: #991b1b;
+}
+
+.directive-checklist {
+    margin: 8px 0;
+}
+
+.directive-checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 10.5pt;
+}
+
+.directive-check-icon {
+    color: var(--c-success);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.directive-dont-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 10.5pt;
+    color: #991b1b;
+}
+
+.directive-dont-icon {
+    color: var(--c-danger);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.directive-separator {
+    border: none;
+    border-top: 1px solid var(--c-border);
+    margin: 20px 0;
+}
+
+.directive-folder-tree {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9pt;
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    padding: 14px 18px;
+    border-radius: 6px;
+    direction: ltr;
+    text-align: left;
+    line-height: 1.6;
+    margin: 10px 0;
+    break-inside: avoid;
+}
+
+.directive-folder-tree .dir { color: #60a5fa; }
+.directive-folder-tree .comment-line { color: #64748b; font-style: italic; }
+
 </style>
 </head>
 <body>
@@ -554,8 +721,235 @@ html, body {
         <div class="cover-meta">
             <strong>نوع الوثيقة:</strong> توصيف معماري للتنفيذ<br>
             <strong>المرحلة المستهدفة:</strong> Phase 1 - النموذج الأولي<br>
-            <strong>الحالة:</strong> بانتظار الموافقة على المعمارية
+            <strong>الحالة:</strong> المعمارية معتمدة — جاهز للتنفيذ
         </div>
+    </div>
+</div>
+
+<!-- ======================== IMPLEMENTATION DIRECTIVE ======================== -->
+<div class="directive-page">
+    <div class="directive-header">Implementation Directive</div>
+    <div class="directive-main-title">تعليمات ما قبل البرمجة</div>
+    <div class="directive-subtitle">UPAS — تعليمات تنفيذية إلزامية للمهندس البرمجي المنفذ</div>
+    <div class="directive-divider"></div>
+
+    <div class="directive-role">
+        أنت الآن المهندس البرمجي المسؤول عن تنفيذ مشروع UPAS.<br>
+        وثيقة المعمارية المرفقة <strong>معتمدة</strong>.<br>
+        مهمتك ليست إعادة تصميم النظام، بل <strong>تنفيذ المعمارية المعتمدة كما هي بالضبط</strong>.
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">استراتيجية التطوير</div>
+        <div class="directive-section-body">
+            <p>اتبع المراحل المعتمدة بصرامة. لا تنفذ جميع المراحل معاً. ابدأ <strong>بالمرحلة الأولى فقط</strong>: النموذج الأولي (Prototype Foundation). بعد إكمال المرحلة الأولى وتجاوز اختبارات القبول، انتظر الموافقة قبل الانتقال للمرحلة الثانية.</p>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">1. إعداد المشروع</div>
+        <div class="directive-section-body">
+            <ul>
+                <li>إنشاء مشروع React + TypeScript + Vite</li>
+                <li>تثبيت Three.js + React Three Fiber + Drei</li>
+                <li>تثبيت وتكوين Tailwind CSS</li>
+                <li>تفعيل TypeScript strict mode</li>
+                <li>تكوين ESLint</li>
+                <li>إنشاء هيكل المجلدات المعتمد</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">2. هيكل المجلدات</div>
+        <div class="directive-folder-tree">
+src/<br>
+&nbsp;&nbsp;components/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;3d/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;forms/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;layout/<br>
+&nbsp;&nbsp;pages/<br>
+&nbsp;&nbsp;models/<br>
+&nbsp;&nbsp;engineering/<br>
+&nbsp;&nbsp;services/<br>
+&nbsp;&nbsp;database/<br>
+&nbsp;&nbsp;store/<br>
+&nbsp;&nbsp;hooks/<br>
+&nbsp;&nbsp;utils/<br>
+&nbsp;&nbsp;types/<br>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">3. نماذج البيانات أولاً</div>
+        <div class="directive-section-body">
+            <p>قبل إنشاء أي واجهة مستخدم، أنشئ واجهات TypeScript الكاملة لـ:</p>
+            <ul>
+                <li><code>Project</code> — بيانات المشروع</li>
+                <li><code>Threat</code> — بيانات التهديد</li>
+                <li><code>Bomb</code> — بيانات القنبلة</li>
+                <li><code>SoilLayer</code> — طبقة التربة</li>
+                <li><code>SoilProfile</code> — ملف التربة الكامل</li>
+                <li><code>Structure</code> — بيانات المنشأ</li>
+                <li><code>AnalysisResult</code> — نتائج التحليل</li>
+                <li><code>VisualizationSettings</code> — إعدادات العرض</li>
+            </ul>
+            <div class="directive-highlight">
+                <strong>قاعدة صارمة:</strong> لا يجوز لأي مكون تعريف هيكل بيانات خاص به. جميع الهياكل تأتي من <code>types/</code> فقط.
+            </div>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">4. إدارة الحالة — Zustand</div>
+        <div class="directive-section-body">
+            <p>أنشئ مخزنين:</p>
+            <ul>
+                <li><strong>projectStore</strong> — المسؤول عن: المشروع الحالي، بيانات التهديد، بيانات التربة، بيانات المنشأ، نتائج التحليل</li>
+                <li><strong>uiStore</strong> — المسؤول عن: العنصر المحدد، الطبقات المرئية، وضع المراجعة، حالة الكاميرا</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">5. طبقة قاعدة البيانات</div>
+        <div class="directive-section-body">
+            <p>أنشئ قواعد بيانات JSON الأولية في <code>database/</code>:</p>
+            <ul>
+                <li><code>bombs.json</code> — أنواع القنابل وخصائصها</li>
+                <li><code>soils.json</code> — أنواع التربة وخصائصها</li>
+                <li><code>materials.json</code> — الخامات الإنشائية</li>
+                <li><code>structures.json</code> — أنواع المنشآت</li>
+            </ul>
+            <div class="directive-warning">
+                <strong>محظور:</strong> لا يجوز وجود أي قيمة هندسية ثابتة داخل المكونات. جميع القيم تُقرأ من ملفات JSON.
+            </div>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">6. النموذج ثلاثي الأبعاد — prototype</div>
+        <div class="directive-section-body">
+            <p>أنشئ مشهد <code>D3Scene</code> يحتوي على:</p>
+            <ul>
+                <li><code>Terrain</code> — سطح الأرض</li>
+                <li><code>SoilLayers</code> — طبقات التربة</li>
+                <li><code>BombModel</code> — نموذج القنبلة</li>
+                <li><code>PenetrationPath</code> — مسار الاختراق</li>
+                <li><code>ExplosionPoint</code> — نقطة الانفجار</li>
+                <li><code>StructureModel</code> — نموذج المنشأ</li>
+                <li><code>Dimensions</code> — الأبعاد والقياسات</li>
+                <li><code>Labels</code> — التسميات</li>
+            </ul>
+            <div class="directive-highlight">
+                في هذه المرحلة: استخدم قيم هندسية placeholder فقط. لا تنفذ المعادلات النهائية.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="directive-page">
+    <div class="directive-section">
+        <div class="directive-section-title">7. واجهة المستخدم</div>
+        <div class="directive-section-body">
+            <p>أنشئ الصفحات التالية:</p>
+            <ul>
+                <li><strong>Dashboard</strong> — لوحة المشاريع</li>
+                <li><strong>New Project Wizard</strong> — معالج إنشاء مشروع جديد</li>
+                <li><strong>Analysis View</strong> — عرض التحليل</li>
+            </ul>
+            <p>خطوات المعالج:</p>
+            <ul>
+                <li>الخطوة 1: التهديد (Threat)</li>
+                <li>الخطوة 2: التربة (Soil)</li>
+                <li>الخطوة 3: المنشأ (Structure)</li>
+                <li>الخطوة 4: معاينة التحليل (Analysis Preview)</li>
+                <li>الخطوة 5: نتائج placeholder (Results Placeholder)</li>
+            </ul>
+        </div>
+    </div>
+
+    <hr class="directive-separator">
+
+    <div class="directive-section">
+        <div class="directive-section-title">8. قواعد الهندسة — إلزامية</div>
+        <div class="directive-section-body">
+            <div class="directive-warning">
+                <strong>المحظورات:</strong>
+                <div class="directive-dont-item"><span class="directive-dont-icon">X</span> وضع الحسابات داخل مكونات React</div>
+                <div class="directive-dont-item"><span class="directive-dont-icon">X</span> كتابة قيم هندسية ثابتة (hardcoded)</div>
+                <div class="directive-dont-item"><span class="directive-dont-icon">X</span> خلط منطق الواجهة مع المنطق الهندسي</div>
+                <div class="directive-dont-item"><span class="directive-dont-icon">X</span> إنشاء مكونات ضخمة (giant components)</div>
+            </div>
+            <div class="directive-highlight">
+                <strong>كل مكون يجب أن يحتوي على:</strong>
+                <div class="directive-checklist-item"><span class="directive-check-icon">+</span> مسؤولية واضحة ومحددة</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">+</span> واجهات TypeScript معرّفة</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">+</span> توثيق (documentation)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">9. متطلبات المشهد ثلاثي الأبعاد</div>
+        <div class="directive-section-body">
+            <p>المشهد ثلاثي الأبعاد يجب أن يدعم:</p>
+            <ul>
+                <li><code>OrbitControls</code> — التحكم بالدوران والتكبير</li>
+                <li>اختيار الأ objects — النقر على عنصر لتحديده</li>
+                <li>إظهار/إخفاء الطبقات</li>
+                <li>عرض الخصائص عند التحديد</li>
+                <li>عرض الأبعاد والقياسات</li>
+            </ul>
+            <div class="directive-highlight">
+                <strong>عند اختيار عنصر:</strong> اعرض بياناته المرتبطة. مثال: اختيار السقف يعرض: العنصر: السقف، السمك: القيمة، المادة: القيمة.
+            </div>
+        </div>
+    </div>
+
+    <div class="directive-section">
+        <div class="directive-section-title">10. قبل كتابة الكود</div>
+        <div class="directive-section-body">
+            <p>الرد الأول يجب أن يحتوي على:</p>
+            <ul>
+                <li>هيكل المجلدات النهائي</li>
+                <li>الحزم المثبتة</li>
+                <li>خطة التنفيذ</li>
+                <li>قائمة مهام المرحلة الأولى</li>
+                <li>ترتيب التنفيذ المقدر</li>
+            </ul>
+            <div class="directive-warning">
+                <strong>لا تكتب أي كود حتى تُوافق على هذه الخطة.</strong>
+            </div>
+        </div>
+    </div>
+
+    <hr class="directive-separator">
+
+    <div class="directive-section">
+        <div class="directive-section-title">معايير قبول المرحلة الأولى</div>
+        <div class="directive-section-body">
+            <p>المرحلة الأولى مكتملة فقط عند تحقق جميع التالي:</p>
+            <div class="directive-checklist">
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> التطبيق يعمل بنجاح</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المستخدم يمكنه إنشاء مشروع جديد</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المستخدم يمكنه إدخال بيانات التهديد</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المستخدم يمكنه إدخال طبقات التربة</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المستخدم يمكنه تعريف المنشأ</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المشهد ثلاثي الأبعاد يعرض جميع العناصر</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> العناصر قابلة للاختيار</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> الأبعاد معروضة</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> المشروع يمكن حفظه محلياً</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> واجهة عربية RTL تعمل بشكل صحيح</div>
+                <div class="directive-checklist-item"><span class="directive-check-icon">[ ]</span> قواعد المعمارية محترمة</div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="directive-separator">
+
+    <div class="directive-role">
+        <strong>الخطوة الأولى:</strong> حلل وثيقة المعمارية. لا تكتب كوداً بعد.
     </div>
 </div>
 
@@ -563,6 +957,8 @@ html, body {
 <div class="toc-page">
     <div class="toc-title">فهرس المحتويات</div>
     <div class="toc-divider"></div>
+
+    <div class="toc-item level-1" style="color: var(--c-accent); font-weight: 800;"><span>تعليمات تنفيذية (Implementation Directive)</span></div>
 
     <div class="toc-item level-1"><span>1. هدف المشروع وطبيعته</span></div>
     <div class="toc-item level-2"><span>1.1 هدف المشروع</span></div>
