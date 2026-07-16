@@ -115,6 +115,16 @@ interface UIState {
   toggleDamageZones: () => void;
   showThreatObject: boolean;
   toggleThreatObject: () => void;
+
+  // ─── Sprint 3C: Engineering Geometry Toggles ─────────────────────
+  showStressOverlay: boolean;
+  toggleStressOverlay: () => void;
+  showThreatPath: boolean;
+  toggleThreatPath: () => void;
+  showCrater: boolean;
+  toggleCrater: () => void;
+  showAnnotations: boolean;
+  toggleAnnotations: () => void;
 }
 
 // ─── Store ─────────────────────────────────────────────────────────
@@ -227,4 +237,14 @@ export const useUIStore = create<UIState>((set) => ({
   toggleDamageZones: () => set((s) => ({ showDamageZones: !s.showDamageZones })),
   showThreatObject: false,
   toggleThreatObject: () => set((s) => ({ showThreatObject: !s.showThreatObject })),
+
+  // Sprint 3C: Engineering Geometry Toggles
+  showStressOverlay: false,
+  toggleStressOverlay: () => set((s) => ({ showStressOverlay: !s.showStressOverlay })),
+  showThreatPath: false,
+  toggleThreatPath: () => set((s) => ({ showThreatPath: !s.showThreatPath })),
+  showCrater: false,
+  toggleCrater: () => set((s) => ({ showCrater: !s.showCrater })),
+  showAnnotations: false,
+  toggleAnnotations: () => set((s) => ({ showAnnotations: !s.showAnnotations })),
 }));

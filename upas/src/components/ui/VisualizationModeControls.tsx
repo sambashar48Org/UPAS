@@ -16,6 +16,15 @@ export default function VisualizationModeControls() {
   const showThreatObject = useUIStore((s) => s.showThreatObject);
   const toggleDamageZones = useUIStore((s) => s.toggleDamageZones);
   const toggleThreatObject = useUIStore((s) => s.toggleThreatObject);
+  // Sprint 3C toggles
+  const showStressOverlay = useUIStore((s) => s.showStressOverlay);
+  const showThreatPath = useUIStore((s) => s.showThreatPath);
+  const showCrater = useUIStore((s) => s.showCrater);
+  const showAnnotations = useUIStore((s) => s.showAnnotations);
+  const toggleStressOverlay = useUIStore((s) => s.toggleStressOverlay);
+  const toggleThreatPath = useUIStore((s) => s.toggleThreatPath);
+  const toggleCrater = useUIStore((s) => s.toggleCrater);
+  const toggleAnnotations = useUIStore((s) => s.toggleAnnotations);
 
   return (
     <div
@@ -92,6 +101,52 @@ export default function VisualizationModeControls() {
         title="مناطق الضرر"
       >
         <span className="text-sm">◎</span>
+      </button>
+
+      {/* Sprint 3C: Engineering geometry toggles */}
+      <button
+        onClick={toggleStressOverlay}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showStressOverlay ? '#22c55e20' : 'transparent',
+          color: showStressOverlay ? '#22c55e' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="تلوين الإجهاد"
+      >
+        <span className="text-sm">▧</span>
+      </button>
+      <button
+        onClick={toggleThreatPath}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showThreatPath ? '#ef444420' : 'transparent',
+          color: showThreatPath ? '#ef4444' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="مسار التهديد"
+      >
+        <span className="text-sm">→</span>
+      </button>
+      <button
+        onClick={toggleCrater}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showCrater ? '#7c2d1220' : 'transparent',
+          color: showCrater ? '#7c2d12' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="الحفرة"
+      >
+        <span className="text-sm">◉</span>
+      </button>
+      <button
+        onClick={toggleAnnotations}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showAnnotations ? '#7c3aed20' : 'transparent',
+          color: showAnnotations ? '#7c3aed' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="التعليقات الهندسية"
+      >
+        <span className="text-sm">T</span>
       </button>
     </div>
   );

@@ -105,6 +105,7 @@ export default function ObjectTree() {
   const soilProfile = useProjectStore((s) => s.soilProfile);
   const threats = useProjectStore((s) => s.threats);
   const bombs = useProjectStore((s) => s.bombs);
+  const lastFullResult = useProjectStore((s) => s.lastFullResult);
   const selectedObjectId = useUIStore((s) => s.selectedObjectId);
   const selectedObjectType = useUIStore((s) => s.selectedObjectType);
   const selectedStructurePart = useUIStore((s) => s.selectedStructurePart);
@@ -250,6 +251,76 @@ export default function ObjectTree() {
             />
           )}
         </TreeNode>
+
+        {/* Sprint 3C: Analysis Results (shown only when results exist) */}
+        {lastFullResult && (
+          <TreeNode
+            nodeId="analysis-results"
+            icon={<span style={{ color: '#7c3aed' }}>≡</span>}
+            label="نتائج التحليل"
+            sublabel={`SF = ${lastFullResult.overall.minSafetyFactor.toFixed(2)}`}
+            color="#7c3aed"
+            defaultExpanded={true}
+          >
+            {/* Protection Level */}
+            <TreeNode
+              nodeId="result-protection"
+              label={lastFullResult.overall.protectionLevel === 'safe' ? 'آمن' :
+                     lastFullResult.overall.protectionLevel === 'marginal' ? 'هامشي' :
+                     lastFullResult.overall.protectionLevel === 'unsafe' ? 'غير آمن' : 'حرج'}
+              sublabel={`العنصر الحاكم: ${lastFullResult.overall.governingElement}`}
+              color={lastFullResult.overall.protectionLevel === 'safe' ? '#22c55e' :
+                     lastFullResult.overall.protectionLevel === 'marginal' ? '#eab308' :
+                     lastFullResult.overall.protectionLevel === 'unsafe' ? '#f97316' : '#dc2626'}
+            />
+            {/* Element safety factors */}
+            {lastFullResult.blast.roofResponse && (
+              <TreeNode
+                nodeId="result-roof"
+                label="السقف"
+                sublabel={`SF = ${lastFullResult.blast.roofResponse.safetyFactor.toFixed(2)} — ${lastFullResult.blast.roofResponse.responseMode}`}
+                color={lastFullResult.blast.roofResponse.safetyFactor >= 1.5 ? '#22c55e' :
+                       lastFullResult.blast.roofResponse.safetyFactor >= 1.2 ? '#eab308' : '#dc2626'}
+              />
+            )}
+            {lastFullResult.blast.wallResponse && (
+              <TreeNode
+                nodeId="result-wall"
+                label="الجدران"
+                sublabel={`SF = ${lastFullResult.blast.wallResponse.safetyFactor.toFixed(2)} — ${lastFullResult.blast.wallResponse.responseMode}`}
+                color={lastFullResult.blast.wallResponse.safetyFactor >= 1.5 ? '#22c55e' :
+                       lastFullResult.blast.wallResponse.safetyFactor >= 1.2 ? '#eab308' : '#dc2626'}
+              />
+            )}
+            {lastFullResult.blast.floorResponse && (
+              <TreeNode
+                nodeId="result-floor"
+                label="الأرضية"
+                sublabel={`SF = ${lastFullResult.blast.floorResponse.safetyFactor.toFixed(2)} — ${lastFullResult.blast.floorResponse.responseMode}`}
+                color={lastFullResult.blast.floorResponse.safetyFactor >= 1.5 ? '#22c55e' :
+                       lastFullResult.blast.floorResponse.safetyFactor >= 1.2 ? '#eab308' : '#dc2626'}
+              />
+            )}
+            {/* Crater info */}
+            {lastFullResult.visualization.damageZones.find(dz => dz.type === 'crater') && (
+              <TreeNode
+                nodeId="result-crater"
+                label="الحفرة"
+                sublabel={`r = ${lastFullResult.visualization.damageZones.find(dz => dz.type === 'crater')!.radius.toFixed(2)} m`}
+                color="#dc2626"
+              />
+            )}
+            {/* Warnings count */}
+            {lastFullResult.warnings.length > 0 && (
+              <TreeNode
+                nodeId="result-warnings"
+                label="التحذيرات"
+                sublabel={`${lastFullResult.warnings.length} تحذير`}
+                color="#f59e0b"
+              />
+            )}
+          </TreeNode>
+        )}
       </div>
     </div>
   );

@@ -5,11 +5,14 @@ import * as THREE from 'three';
 import { StructureType } from '../../types';
 import type { Structure } from '../../models/Structure';
 import { useUIStore } from '../../stores/uiStore';
+import DomeStructure from './DomeStructure';
 
 interface ParametricStructureProps {
   structure: Structure;
   isSelected: boolean;
   onSelect: () => void;
+  /** Sprint 3C: Pre-computed stress colors from adapter */
+  stressColor?: { roof: string; wall: string; floor: string };
 }
 
 const CONCRETE_COLOR = '#a8b5c4';
@@ -167,8 +170,11 @@ function ArchStructure({ structure, isSelected, onSelect }: ParametricStructureP
   );
 }
 
-/* ─────────── CYLINDER (Tunnel) ─────────── */
+/* ─────────── CYLINDER (Tunnel) — Sprint 3C: Added part selection ─────────── */
 function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructureProps) {
+  const selectedPart = useUIStore((s) => s.selectedStructurePart);
+  const setSelectedStructurePart = useUIStore((s) => s.setSelectedStructurePart);
+
   const len = Number(structure.length.value);
   const wid = Number(structure.width.value);
   const hgt = Number(structure.height.value);
@@ -177,30 +183,53 @@ function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructure
   const bd = Number(structure.burialDepth.value);
 
   const centerY = -bd - hgt / 2;
-  const mat = useMemo(() => getPartMaterial(isSelected, false, CONCRETE_COLOR, CONCRETE_SELECTED), [isSelected]);
-
   const outerR = wid / 2;
   const innerR = Math.max(0.01, outerR - wt);
 
+  const roofMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'roof', CONCRETE_ROOF_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const wallMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'wall', CONCRETE_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const floorMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'floor', CONCRETE_FLOOR_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+
+  const handleRoofClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('roof'); };
+  const handleWallClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('wall'); };
+  const handleFloorClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('floor'); };
+
   return (
-    <group onPointerDown={(e) => { e.stopPropagation(); onSelect(); }}>
+    <group>
+      {/* Outer cylinder shell — wall + roof combined */}
       <mesh
         position={[0, centerY, 0]}
         rotation={[0, 0, Math.PI / 2]}
-        material={mat}
+        material={wallMat}
+        onPointerDown={handleWallClick}
       >
         <cylinderGeometry args={[outerR, outerR, len, 32, 1, false]} />
       </mesh>
+
+      {/* Inner cylinder (hollow) — same wall material */}
       <mesh
         position={[0, centerY, 0]}
         rotation={[0, 0, Math.PI / 2]}
-        material={mat}
+        material={wallMat}
       >
         <cylinderGeometry args={[innerR, innerR, len, 32, 1, false]} />
       </mesh>
+
+      {/* Roof cap (top disc) */}
+      <mesh
+        position={[0, centerY, -len / 2]}
+        rotation={[0, 0, Math.PI / 2]}
+        material={roofMat}
+        onPointerDown={handleRoofClick}
+      >
+        <ringGeometry args={[innerR, outerR, 32]} />
+      </mesh>
+
+      {/* Floor slab */}
       <mesh
         position={[0, centerY - outerR + ft / 2, 0]}
-        material={mat}
+        material={floorMat}
+        onPointerDown={handleFloorClick}
       >
         <boxGeometry args={[len, ft, wid]} />
       </mesh>
@@ -210,13 +239,15 @@ function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructure
 
 /* ─────────── MAIN ─────────── */
 const ParametricStructure = React.memo(function ParametricStructure(props: ParametricStructureProps) {
-  const { structure, isSelected, onSelect } = props;
+  const { structure, isSelected, onSelect, stressColor } = props;
 
   switch (structure.type) {
     case StructureType.Arch:
       return <ArchStructure structure={structure} isSelected={isSelected} onSelect={onSelect} />;
     case StructureType.Cylinder:
       return <CylinderTunnel structure={structure} isSelected={isSelected} onSelect={onSelect} />;
+    case StructureType.Dome:
+      return <DomeStructure structure={structure} isSelected={isSelected} onSelect={onSelect} stressColor={stressColor} />;
     case StructureType.Box:
     default:
       return <BoxStructure structure={structure} isSelected={isSelected} onSelect={onSelect} />;

@@ -1,6 +1,7 @@
 /**
  * UPAS — Visualization Adapter
  * Sprint 3B: Converts FullAnalysisResult → VisualizationModel
+ * Sprint 3C: Integrates GeometryBridge for path, crater, annotations.
  *
  * This is the ONLY place where engineering status → visual style mapping happens.
  * 3D components receive pre-computed colors and never decide on styling.
@@ -15,6 +16,7 @@
 
 import type { FullAnalysisResult } from '../calculations/types';
 import type { VisualizationModel, DamageZoneVM, ThreatObjectVM, PressureContourVM, StressRegionVM } from './VisualizationModel';
+import { buildGeometryData } from './GeometryBridge';
 
 // ─── Style Mapping Tables ───────────────────────────────────────
 
@@ -37,11 +39,19 @@ const STRESS_COLORS: Record<string, string> = {
 export function buildVisualizationModel(result: FullAnalysisResult): VisualizationModel {
   const threatPos = getThreatPosition(result);
 
+  // Sprint 3C: Build geometry data (path, crater, stress overlay, annotations)
+  const geoData = buildGeometryData(result);
+
   return {
     damageZones: mapDamageZones(result, threatPos),
     threatObject: buildThreatObject(result),
     pressureContours: mapPressureContours(result),
     stressRegions: mapStressRegions(result),
+    // Sprint 3C fields
+    threatPath: geoData.threatPath,
+    crater: geoData.crater,
+    stressOverlay: geoData.stressOverlay,
+    annotations: geoData.annotations,
   };
 }
 
@@ -67,7 +77,15 @@ function buildThreatObject(result: FullAnalysisResult): ThreatObjectVM {
   const threat = result.input.threat;
   const explosive = threat.explosive;
   const pos = getThreatPosition(result);
-  const dir = result.geometry?.threatDirection ?? { x: 0, y: -1, z: 0 };
+  // Sprint 3C Fix: FullAnalysisResult has no .geometry property.
+  // Compute threat direction from input positions (threat → structure center).
+  const sPos = result.input.structure.position;
+  const mag = Math.sqrt(
+    (sPos.x - pos[0]) ** 2 + (sPos.y - pos[1]) ** 2 + (sPos.z - pos[2]) ** 2
+  );
+  const dir = mag > 0
+    ? { x: (sPos.x - pos[0]) / mag, y: (sPos.y - pos[1]) / mag, z: (sPos.z - pos[2]) / mag }
+    : { x: 0, y: -1, z: 0 };
 
   // Estimate charge visual size from mass (assuming density ~1600 kg/m³)
   const density = explosive.density || 1600;

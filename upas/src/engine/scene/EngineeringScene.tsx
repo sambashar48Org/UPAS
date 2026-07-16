@@ -13,6 +13,11 @@ import SelectionManager from './SelectionManager';
 import ThreatObject3D from './ThreatObject3D';
 import DamageZones3D from './DamageZones3D';
 import CutPlane from './CutPlane';
+// Sprint 3C imports
+import StressOverlay3D from './StressOverlay3D';
+import ThreatPath3D from './ThreatPath3D';
+import CraterVisualization3D from './CraterVisualization3D';
+import EngineeringAnnotations3D from './EngineeringAnnotations3D';
 import { buildVisualizationModel } from '../../visualization';
 
 interface EngineeringSceneProps {
@@ -33,6 +38,11 @@ function SceneContent() {
   const visualizationMode = useUIStore((s) => s.visualizationMode);
   const showThreatObject = useUIStore((s) => s.showThreatObject);
   const showDamageZones = useUIStore((s) => s.showDamageZones);
+  // Sprint 3C toggles
+  const showStressOverlay = useUIStore((s) => s.showStressOverlay);
+  const showThreatPath = useUIStore((s) => s.showThreatPath);
+  const showCrater = useUIStore((s) => s.showCrater);
+  const showAnnotations = useUIStore((s) => s.showAnnotations);
 
   const isStructureSelected =
     (selectedObjectType === 'structure' || selectedObjectType === 'structure-part') &&
@@ -62,7 +72,7 @@ function SceneContent() {
     [soilProfile, setSelectedObject]
   );
 
-  // Sprint 3B: Build visualization model from results
+  // Build visualization model from results
   const vizModel = useMemo(() => {
     if (!lastFullResult) return null;
     return buildVisualizationModel(lastFullResult);
@@ -142,6 +152,7 @@ function SceneContent() {
           structure={structure}
           isSelected={isStructureSelected}
           onSelect={handleStructureSelect}
+          stressColor={vizModel?.stressOverlay.hasData ? vizModel.stressOverlay.elementColors : undefined}
         />
       )}
 
@@ -156,6 +167,20 @@ function SceneContent() {
         <DamageZones3D data={vizModel} />
       )}
       <CutPlane />
+
+      {/* Sprint 3C: Engineering Geometry Visualization */}
+      {showStressOverlay && structure && vizModel && (
+        <StressOverlay3D structure={structure} overlay={vizModel.stressOverlay} />
+      )}
+      {showThreatPath && vizModel?.threatPath && (
+        <ThreatPath3D data={vizModel.threatPath} />
+      )}
+      {showCrater && vizModel?.crater && (
+        <CraterVisualization3D data={vizModel.crater} />
+      )}
+      {showAnnotations && vizModel && vizModel.annotations.length > 0 && (
+        <EngineeringAnnotations3D annotations={vizModel.annotations} />
+      )}
 
       {/* FPS counter + scene ready signal */}
       <SelectionManager />

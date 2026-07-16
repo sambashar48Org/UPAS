@@ -32,7 +32,6 @@ function ArrowHead({
 }) {
   const geo = useMemo(() => {
     const g = new THREE.BufferGeometry();
-    // Small triangle arrow
     const dir = new THREE.Vector3(...direction).normalize();
     const size = 0.15;
     const perp = new THREE.Vector3();
@@ -70,7 +69,7 @@ function DimensionLineSegment({
   start: [number, number, number];
   end: [number, number, number];
   label: string;
-  extensionStart?: [number, number, number]; // Point on object for extension line start
+  extensionStart?: [number, number, number];
   extensionEnd?: [number, number, number];
 }) {
   const mainGeo = useMemo(() => {
@@ -93,14 +92,12 @@ function DimensionLineSegment({
 
     const lines: THREE.BufferGeometry[] = [];
 
-    // Extension line at start
     const extStart = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(...extensionStart),
       new THREE.Vector3(...start),
     ]);
     lines.push(extStart);
 
-    // Extension line at end
     const extEnd = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(...extensionEnd),
       new THREE.Vector3(...end),
@@ -179,6 +176,129 @@ const DimensionLines = React.memo(function DimensionLines({ structure }: Dimensi
   const botY = -bd - hgt;
   const off = OFFSET;
 
+  // Sprint 3C: Type-specific dimensions
+  if (structure.type === StructureType.Cylinder) {
+    const diameter = wid;
+    return (
+      <group>
+        {/* Length — along X */}
+        <DimensionLineSegment
+          start={[-len / 2, botY - off, 0]}
+          end={[len / 2, botY - off, 0]}
+          label={fmt(len)}
+          extensionStart={[-len / 2, botY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+        {/* Diameter — along Z */}
+        <DimensionLineSegment
+          start={[len / 2 + off, botY, -diameter / 2]}
+          end={[len / 2 + off, botY, diameter / 2]}
+          label={`⌀ ${fmt(diameter)}`}
+          extensionStart={[len / 2, botY, -diameter / 2]}
+          extensionEnd={[len / 2, botY, diameter / 2]}
+        />
+        {/* Height — along Y */}
+        <DimensionLineSegment
+          start={[len / 2 + off, topY, 0]}
+          end={[len / 2 + off, botY, 0]}
+          label={fmt(hgt)}
+          extensionStart={[len / 2, topY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+      </group>
+    );
+  }
+
+  if (structure.type === StructureType.Arch) {
+    const archR = wid / 2;
+    const wallH = Math.max(0.01, hgt - archR - ft);
+    return (
+      <group>
+        {/* Length — along X */}
+        <DimensionLineSegment
+          start={[-len / 2, botY - off, 0]}
+          end={[len / 2, botY - off, 0]}
+          label={fmt(len)}
+          extensionStart={[-len / 2, botY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+        {/* Width — along Z */}
+        <DimensionLineSegment
+          start={[len / 2 + off, (topY + botY) / 2, -wid / 2]}
+          end={[len / 2 + off, (topY + botY) / 2, wid / 2]}
+          label={fmt(wid)}
+          extensionStart={[len / 2, (topY + botY) / 2, -wid / 2]}
+          extensionEnd={[len / 2, (topY + botY) / 2, wid / 2]}
+        />
+        {/* Total height — along Y */}
+        <DimensionLineSegment
+          start={[len / 2 + off, topY, 0]}
+          end={[len / 2 + off, botY, 0]}
+          label={fmt(hgt)}
+          extensionStart={[len / 2, topY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+        {/* Arch radius */}
+        <DimensionLineSegment
+          start={[0, topY - archR, wid / 2 + off * 0.7]}
+          end={[0, topY, wid / 2 + off * 0.7]}
+          label={`R = ${fmt(archR)}`}
+          extensionStart={[0, topY - archR, wid / 2]}
+          extensionEnd={[0, topY, wid / 2]}
+        />
+        {/* Wall height */}
+        <DimensionLineSegment
+          start={[-len / 2 - off * 0.7, botY + ft, 0]}
+          end={[-len / 2 - off * 0.7, botY + ft + wallH, 0]}
+          label={fmt(wallH)}
+          extensionStart={[-len / 2, botY + ft, 0]}
+          extensionEnd={[-len / 2, botY + ft + wallH, 0]}
+        />
+      </group>
+    );
+  }
+
+  if (structure.type === StructureType.Dome) {
+    const domeR = wid / 2;
+    const boxH = Math.max(0.01, hgt - domeR - ft);
+    const boxTopY = botY + ft + boxH;
+    return (
+      <group>
+        {/* Length — along X */}
+        <DimensionLineSegment
+          start={[-len / 2, botY - off, 0]}
+          end={[len / 2, botY - off, 0]}
+          label={fmt(len)}
+          extensionStart={[-len / 2, botY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+        {/* Width — along Z */}
+        <DimensionLineSegment
+          start={[len / 2 + off, (topY + botY) / 2, -wid / 2]}
+          end={[len / 2 + off, (topY + botY) / 2, wid / 2]}
+          label={fmt(wid)}
+          extensionStart={[len / 2, (topY + botY) / 2, -wid / 2]}
+          extensionEnd={[len / 2, (topY + botY) / 2, wid / 2]}
+        />
+        {/* Total height — along Y */}
+        <DimensionLineSegment
+          start={[len / 2 + off, topY, 0]}
+          end={[len / 2 + off, botY, 0]}
+          label={fmt(hgt)}
+          extensionStart={[len / 2, topY, 0]}
+          extensionEnd={[len / 2, botY, 0]}
+        />
+        {/* Dome radius */}
+        <DimensionLineSegment
+          start={[0, boxTopY, wid / 2 + off * 0.7]}
+          end={[domeR, boxTopY, wid / 2 + off * 0.7]}
+          label={`R = ${fmt(domeR)}`}
+        />
+      </group>
+    );
+  }
+
+  // Default: Box dimensions
   return (
     <group>
       {/* Length — along X, below the structure */}
@@ -208,7 +328,7 @@ const DimensionLines = React.memo(function DimensionLines({ structure }: Dimensi
         extensionEnd={[len / 2, botY, 0]}
       />
 
-      {/* Roof thickness — along Y at front */}
+      {/* Roof thickness */}
       <DimensionLineSegment
         start={[0, topY, wid / 2 + off * 0.7]}
         end={[0, topY - rt, wid / 2 + off * 0.7]}
@@ -217,7 +337,7 @@ const DimensionLines = React.memo(function DimensionLines({ structure }: Dimensi
         extensionEnd={[0, topY - rt, wid / 2]}
       />
 
-      {/* Wall thickness — along Z at mid-height */}
+      {/* Wall thickness */}
       <DimensionLineSegment
         start={[len / 2 + off * 0.7, (topY + botY) / 2, wid / 2]}
         end={[len / 2 + off * 0.7, (topY + botY) / 2, wid / 2 - wt]}

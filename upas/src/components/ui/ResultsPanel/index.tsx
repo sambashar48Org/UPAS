@@ -78,7 +78,7 @@ export default function ResultsPanel() {
           <ResultRow label="الإجهاد الفعال" value={vm.ssi.effectiveStress.toFixed(1)} unit="kPa" />
           <ResultRow label="عامل التخفيف" value={vm.ssi.soilAttenuationFactor.toFixed(4)} />
           <ResultRow label="الضغط على المنشأ" value={vm.ssi.pressureAtStructure.toFixed(1)} unit="kPa" />
-          <ResultRow label="سرعة الموجة الأرضية" value={vm.groundShockPPV.toFixed(2)} unit="m/s" />
+          <ResultRow label="سرعة الموجة الأرضية" value={vm.ssi.groundShockPPV.toFixed(2)} unit="m/s" />
         </div>
       )}
 
