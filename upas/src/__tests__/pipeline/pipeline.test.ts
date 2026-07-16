@@ -5,7 +5,7 @@
  * Also tests: VisualizationAdapter, ResultAdapter, ReportAdapter
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { executeAnalysis } from '../../services/analysis';
 import { createDemoProject } from '../../data/demoProject';
 import { buildVisualizationModel } from '../../visualization/VisualizationAdapter';
