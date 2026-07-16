@@ -11,6 +11,8 @@ import type { Bomb } from '../models/Bomb';
 import type { SoilProfile } from '../models/Soil';
 import type { Structure } from '../models/Structure';
 import type { AnalysisResult } from '../models/AnalysisResult';
+import type { FullAnalysisResult } from '../calculations/types';
+import type { ReportSection } from '../calculations/reports';
 import type { VisualizationSettings } from '../models/VisualizationSettings';
 import { createProject } from '../models/Project';
 import { createVisualizationSettings } from '../models/VisualizationSettings';
@@ -27,6 +29,12 @@ interface ProjectState {
   structure: Structure | null;
   analysisResults: AnalysisResult[];
   visualizationSettings: VisualizationSettings | null;
+
+  // Sprint 3B: Analysis pipeline state
+  isAnalyzing: boolean;
+  lastFullResult: FullAnalysisResult | null;
+  lastReport: ReportSection[] | null;
+  analysisError: string | null;
 
   // Project list (for dashboard)
   projects: Project[];
@@ -55,6 +63,12 @@ interface ProjectState {
 
   setVisualizationSettings: (settings: VisualizationSettings) => void;
 
+  // Sprint 3B: Pipeline actions
+  setIsAnalyzing: (val: boolean) => void;
+  setLastFullResult: (result: FullAnalysisResult | null) => void;
+  setLastReport: (report: ReportSection[] | null) => void;
+  setAnalysisError: (err: string | null) => void;
+
   resetProjectState: () => void;
 }
 
@@ -67,6 +81,13 @@ const initialState = {
   structure: null as Structure | null,
   analysisResults: [] as AnalysisResult[],
   visualizationSettings: null as VisualizationSettings | null,
+
+  // Sprint 3B
+  isAnalyzing: false,
+  lastFullResult: null as FullAnalysisResult | null,
+  lastReport: null as ReportSection[] | null,
+  analysisError: null as string | null,
+
   projects: [] as Project[],
 };
 
@@ -123,6 +144,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((s) => ({ analysisResults: [...s.analysisResults, result] })),
 
   setVisualizationSettings: (settings) => set({ visualizationSettings: settings }),
+
+  setIsAnalyzing: (val) => set({ isAnalyzing: val }),
+  setLastFullResult: (result) => set({ lastFullResult: result }),
+  setLastReport: (report) => set({ lastReport: report }),
+  setAnalysisError: (err) => set({ analysisError: err }),
 
   resetProjectState: () => set(initialState),
 }));

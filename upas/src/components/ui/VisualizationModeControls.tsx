@@ -12,6 +12,10 @@ export default function VisualizationModeControls() {
   const visualizationMode = useUIStore((s) => s.visualizationMode);
   const setVisualizationMode = useUIStore((s) => s.setVisualizationMode);
   const requestAutoFit = useUIStore((s) => s.requestAutoFit);
+  const showDamageZones = useUIStore((s) => s.showDamageZones);
+  const showThreatObject = useUIStore((s) => s.showThreatObject);
+  const toggleDamageZones = useUIStore((s) => s.toggleDamageZones);
+  const toggleThreatObject = useUIStore((s) => s.toggleThreatObject);
 
   return (
     <div
@@ -63,6 +67,31 @@ export default function VisualizationModeControls() {
           <path d="M3 21l7-7" />
         </svg>
         <span>ملاءمة</span>
+      </button>
+
+      {/* Sprint 3B: Analysis visualization toggles */}
+      <div className="w-px h-5 mx-1" style={{ backgroundColor: 'var(--upas-border, #cbd5e1)' }} />
+      <button
+        onClick={toggleThreatObject}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showThreatObject ? '#ef444420' : 'transparent',
+          color: showThreatObject ? '#ef4444' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="كائن التهديد"
+      >
+        <span className="text-sm">⚠</span>
+      </button>
+      <button
+        onClick={toggleDamageZones}
+        className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+        style={{
+          backgroundColor: showDamageZones ? '#f9731620' : 'transparent',
+          color: showDamageZones ? '#f97316' : 'var(--upas-text-primary, #1e293b)',
+        }}
+        title="مناطق الضرر"
+      >
+        <span className="text-sm">◎</span>
       </button>
     </div>
   );

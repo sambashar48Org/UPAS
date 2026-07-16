@@ -1,63 +1,54 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
-import { useUIStore } from '../../../stores/uiStore';
-import { createStructure } from '../../../models/Structure';
-import { createSoilProfile, createSoilLayer } from '../../../models/Soil';
-import { StructureType } from '../../../types';
+import { useUIStore, type AnalysisTab } from '../../../stores/uiStore';
+import { createDemoProject } from '../../../data/demoProject';
 import EngineeringScene from '../../../engine/scene/EngineeringScene';
+import { CutPlaneSlider } from '../../../engine/scene/CutPlane';
 import CameraToolbar from '../../ui/CameraToolbar';
 import SectionViewControls from '../../ui/SectionViewControls';
 import VisualizationModeControls from '../../ui/VisualizationModeControls';
+import AnalysisToolbar from '../../ui/AnalysisToolbar';
 import PropertiesPanel from '../../ui/PropertiesPanel';
 import ObjectTree from '../../ui/ObjectTree';
+import InputForm, { InputSubTabs } from '../../ui/InputForm';
+import SoilForm from '../../ui/InputForm/SoilForm';
+import StructureForm from '../../ui/InputForm/StructureForm';
+import ThreatForm from '../../ui/InputForm/ThreatForm';
+import ResultsPanel from '../../ui/ResultsPanel';
+import ReportViewer from '../../ui/ReportViewer';
 
 export default function AnalysisView() {
   const currentProject = useProjectStore((s) => s.currentProject);
   const structure = useProjectStore((s) => s.structure);
   const soilProfile = useProjectStore((s) => s.soilProfile);
+  const threats = useProjectStore((s) => s.threats);
+  const bombs = useProjectStore((s) => s.bombs);
   const setStructure = useProjectStore((s) => s.setStructure);
   const setSoilProfile = useProjectStore((s) => s.setSoilProfile);
+  const setThreats = useProjectStore((s) => s.setThreats);
+  const setBombs = useProjectStore((s) => s.setBombs);
+  const setCurrentProject = useProjectStore((s) => s.setCurrentProject);
+
+  const analysisTab = useUIStore((s) => s.analysisTab);
   const sceneFPS = useUIStore((s) => s.sceneFPS);
   const visualizationMode = useUIStore((s) => s.visualizationMode);
 
-  const demoProjectId = useRef<string | null>(null);
+  const demoLoaded = useRef<string | null>(null);
+  const [inputSubTab, setInputSubTab] = useState<'soil' | 'structure' | 'threat'>('soil');
 
-  // Seed demo data when project exists but no structure/soil
+  // Load demo project data on first mount
   useEffect(() => {
     if (!currentProject) return;
-    if (structure || soilProfile) return;
-    if (demoProjectId.current === currentProject.id) return;
+    if (demoLoaded.current === currentProject.id) return;
+    demoLoaded.current = currentProject.id;
 
-    demoProjectId.current = currentProject.id;
-
-    const demoStructure = createStructure({
-      projectId: currentProject.id,
-      name: 'ملجأ تحت أرضي تجريبي',
-      type: StructureType.Box,
-      length: { value: 8, unit: 'm' },
-      width: { value: 5, unit: 'm' },
-      height: { value: 3.5, unit: 'm' },
-      wallThickness: { value: 0.35, unit: 'm' },
-      roofThickness: { value: 0.40, unit: 'm' },
-      floorThickness: { value: 0.35, unit: 'm' },
-      burialDepth: { value: 3, unit: 'm' },
-    });
-    setStructure(demoStructure);
-
-    const layer0 = createSoilLayer({ name: 'رمل مفكوك', soilTypeRef: 'sand_loose', topElevation: { value: 0, unit: 'm' }, thickness: { value: 1.5, unit: 'm' } }, 0);
-    const layer1 = createSoilLayer({ name: 'طين رخو', soilTypeRef: 'clay_soft', topElevation: { value: -1.5, unit: 'm' }, thickness: { value: 2.5, unit: 'm' } }, 1);
-    const layer2 = createSoilLayer({ name: 'رمل متوسط', soilTypeRef: 'sand_medium', topElevation: { value: -4, unit: 'm' }, thickness: { value: 3, unit: 'm' } }, 2);
-    const layer3 = createSoilLayer({ name: 'صخر متآكل', soilTypeRef: 'rock_weathered', topElevation: { value: -7, unit: 'm' }, thickness: { value: 4, unit: 'm' } }, 3);
-
-    const demoSoil = createSoilProfile({
-      projectId: currentProject.id,
-      name: 'ملف تربة تجريبي',
-      layers: [layer0, layer1, layer2, layer3],
-      waterTableDepth: { value: -3, unit: 'm' },
-      totalDepth: { value: 11, unit: 'm' },
-    });
-    setSoilProfile(demoSoil);
-  }, [currentProject, structure, soilProfile, setStructure, setSoilProfile]);
+    const demo = createDemoProject();
+    setCurrentProject(demo.project);
+    setStructure(demo.structure);
+    setSoilProfile(demo.soilProfile);
+    setThreats([demo.threat]);
+    setBombs([demo.bomb]);
+  }, [currentProject, setStructure, setSoilProfile, setThreats, setBombs, setCurrentProject]);
 
   // ─── No project ──────────────────────────────────────────────
   if (!currentProject) {
@@ -85,43 +76,52 @@ export default function AnalysisView() {
 
   const hasSceneData = structure || soilProfile;
 
+  // Render the right panel content based on tab
+  const renderRightPanel = () => {
+    if (analysisTab === 'input') {
+      return (
+        <div
+          className="shrink-0 border-l overflow-hidden flex flex-col"
+          style={{ width: 280, minWidth: 280, borderColor: 'var(--upas-border)', position: 'relative', zIndex: 2 }}
+        >
+          <InputSubTabs active={inputSubTab} onChange={setInputSubTab} />
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {inputSubTab === 'soil' && <SoilForm />}
+            {inputSubTab === 'structure' && <StructureForm />}
+            {inputSubTab === 'threat' && <ThreatForm />}
+          </div>
+        </div>
+      );
+    }
+    if (analysisTab === 'results') {
+      return (
+        <div
+          className="shrink-0 border-l overflow-hidden"
+          style={{ width: 320, minWidth: 320, borderColor: 'var(--upas-border)', position: 'relative', zIndex: 2 }}
+        >
+          <ResultsPanel />
+        </div>
+      );
+    }
+    if (analysisTab === 'report') {
+      return (
+        <div
+          className="shrink-0 border-l overflow-hidden"
+          style={{ width: 380, minWidth: 380, borderColor: 'var(--upas-border)', position: 'relative', zIndex: 2 }}
+        >
+          <ReportViewer />
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="flex flex-col h-full" dir="rtl">
-      {/* ─── Top toolbar ──────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-4 py-2 border-b shrink-0"
-        style={{
-          backgroundColor: 'var(--upas-bg-card)',
-          borderColor: 'var(--upas-border)',
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold" style={{ color: 'var(--upas-text-primary)' }}>
-            التحليل
-          </h1>
-          <span className="text-xs" style={{ color: 'var(--upas-text-secondary)' }}>
-            {currentProject.name}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--upas-text-secondary)' }}>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono"
-            style={{
-              backgroundColor: visualizationMode === 'surface' ? '#10b981' :
-                visualizationMode === 'cutaway' ? '#f59e0b' :
-                visualizationMode === 'xray' ? '#8b5cf6' : 'transparent',
-              color: visualizationMode !== 'normal' ? '#fff' : undefined,
-            }}
-          >
-            {visualizationMode === 'normal' ? 'عادي' :
-             visualizationMode === 'surface' ? 'سطح' :
-             visualizationMode === 'cutaway' ? 'مقطع' :
-             visualizationMode === 'xray' ? 'أشعة سينية' : ''}
-          </span>
-          <span>{sceneFPS} إطار/ث</span>
-        </div>
-      </div>
+      {/* ─── Analysis Toolbar (Run + Tabs) ──────────────────── */}
+      <AnalysisToolbar />
 
-      {/* ─── Main workspace ──────────────────────────── */}
+      {/* ─── Main workspace ──────────────────────────────────── */}
       <div className="flex flex-1 min-h-0">
         {/* Object Tree panel (left side in RTL) */}
         <div
@@ -145,6 +145,7 @@ export default function AnalysisView() {
               <CameraToolbar />
               <SectionViewControls />
               <VisualizationModeControls />
+              <CutPlaneSlider />
 
               {/* The 3D canvas */}
               <EngineeringScene className="w-full h-full" />
@@ -158,7 +159,10 @@ export default function AnalysisView() {
           )}
         </div>
 
-        {/* Properties panel (right side in RTL) */}
+        {/* Right panel: Input / Results / Report */}
+        {renderRightPanel()}
+
+        {/* Properties panel (far right, always available) */}
         <div style={{ position: 'relative', zIndex: 2 }}>
           <PropertiesPanel />
         </div>

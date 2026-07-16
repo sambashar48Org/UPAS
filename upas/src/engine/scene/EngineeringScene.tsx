@@ -10,6 +10,10 @@ import SoilLayers3D from './SoilLayers3D';
 import EngineeringLabels from './EngineeringLabels';
 import DimensionLines from './DimensionLines';
 import SelectionManager from './SelectionManager';
+import ThreatObject3D from './ThreatObject3D';
+import DamageZones3D from './DamageZones3D';
+import CutPlane from './CutPlane';
+import { buildVisualizationModel } from '../../visualization';
 
 interface EngineeringSceneProps {
   className?: string;
@@ -19,6 +23,7 @@ interface EngineeringSceneProps {
 function SceneContent() {
   const structure = useProjectStore((s) => s.structure);
   const soilProfile = useProjectStore((s) => s.soilProfile);
+  const lastFullResult = useProjectStore((s) => s.lastFullResult);
 
   const selectedObjectId = useUIStore((s) => s.selectedObjectId);
   const selectedObjectType = useUIStore((s) => s.selectedObjectType);
@@ -26,6 +31,8 @@ function SceneContent() {
   const clearSelection = useUIStore((s) => s.clearSelection);
   const hiddenSoilLayers = useUIStore((s) => s.hiddenSoilLayers);
   const visualizationMode = useUIStore((s) => s.visualizationMode);
+  const showThreatObject = useUIStore((s) => s.showThreatObject);
+  const showDamageZones = useUIStore((s) => s.showDamageZones);
 
   const isStructureSelected =
     (selectedObjectType === 'structure' || selectedObjectType === 'structure-part') &&
@@ -54,6 +61,12 @@ function SceneContent() {
     },
     [soilProfile, setSelectedObject]
   );
+
+  // Sprint 3B: Build visualization model from results
+  const vizModel = useMemo(() => {
+    if (!lastFullResult) return null;
+    return buildVisualizationModel(lastFullResult);
+  }, [lastFullResult]);
 
   // Determine the orbit target based on structure
   const orbitTarget = useMemo((): [number, number, number] => {
@@ -134,6 +147,15 @@ function SceneContent() {
 
       {structure && <EngineeringLabels structure={structure} soilProfile={soilProfile} />}
       {structure && <DimensionLines structure={structure} />}
+
+      {/* Sprint 3B: Analysis Visualization */}
+      {showThreatObject && vizModel?.threatObject && (
+        <ThreatObject3D data={vizModel.threatObject} />
+      )}
+      {showDamageZones && vizModel && (
+        <DamageZones3D data={vizModel} />
+      )}
+      <CutPlane />
 
       {/* FPS counter + scene ready signal */}
       <SelectionManager />

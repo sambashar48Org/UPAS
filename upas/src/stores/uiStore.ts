@@ -32,6 +32,9 @@ export type CameraPreset = 'perspective' | 'top' | 'front' | 'side' | 'back' | '
 // ─── Visualization Mode (Sprint 2.5) ──────────────────────────────
 export type VisualizationMode = 'normal' | 'surface' | 'cutaway' | 'xray';
 
+// ─── Sprint 3B: Analysis Tab ──────────────────────────────────────
+export type AnalysisTab = 'input' | 'results' | 'report';
+
 // ─── State Shape ───────────────────────────────────────────────────
 interface UIState {
   // Navigation
@@ -98,6 +101,20 @@ interface UIState {
   // ─── Sprint 2.5: Object Tree ────────────────────────────────────
   objectTreeExpanded: Record<string, boolean>;
   toggleObjectTreeNode: (nodeId: string) => void;
+
+  // ─── Sprint 3B: Analysis Tab ─────────────────────────────────────
+  analysisTab: AnalysisTab;
+  setAnalysisTab: (tab: AnalysisTab) => void;
+
+  // ─── Sprint 3B: Cut Plane Depth ───────────────────────────────────
+  cutPlaneDepth: number;
+  setCutPlaneDepth: (depth: number) => void;
+
+  // ─── Sprint 3B: Visualization Toggles ────────────────────────────
+  showDamageZones: boolean;
+  toggleDamageZones: () => void;
+  showThreatObject: boolean;
+  toggleThreatObject: () => void;
 }
 
 // ─── Store ─────────────────────────────────────────────────────────
@@ -196,4 +213,18 @@ export const useUIStore = create<UIState>((set) => ({
   toggleObjectTreeNode: (nodeId) => set((s) => ({
     objectTreeExpanded: { ...s.objectTreeExpanded, [nodeId]: !s.objectTreeExpanded[nodeId] },
   })),
+
+  // Sprint 3B: Analysis Tab
+  analysisTab: 'input' as AnalysisTab,
+  setAnalysisTab: (tab) => set({ analysisTab: tab }),
+
+  // Sprint 3B: Cut Plane Depth
+  cutPlaneDepth: 10,
+  setCutPlaneDepth: (depth) => set({ cutPlaneDepth: depth }),
+
+  // Sprint 3B: Visualization Toggles
+  showDamageZones: false,
+  toggleDamageZones: () => set((s) => ({ showDamageZones: !s.showDamageZones })),
+  showThreatObject: false,
+  toggleThreatObject: () => set((s) => ({ showThreatObject: !s.showThreatObject })),
 }));

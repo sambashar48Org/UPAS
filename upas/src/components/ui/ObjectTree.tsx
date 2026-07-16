@@ -103,6 +103,8 @@ function TreeNode({
 export default function ObjectTree() {
   const structure = useProjectStore((s) => s.structure);
   const soilProfile = useProjectStore((s) => s.soilProfile);
+  const threats = useProjectStore((s) => s.threats);
+  const bombs = useProjectStore((s) => s.bombs);
   const selectedObjectId = useUIStore((s) => s.selectedObjectId);
   const selectedObjectType = useUIStore((s) => s.selectedObjectType);
   const selectedStructurePart = useUIStore((s) => s.selectedStructurePart);
@@ -227,16 +229,26 @@ export default function ObjectTree() {
           nodeId="threat"
           icon={<span style={{ color: '#ef4444' }}>⚠</span>}
           label="التهديد"
-          sublabel="لم يتم التحديد"
+          sublabel={threats[0] ? `${threats[0].name}` : bombs[0] ? `${Number(bombs[0].chargeMass.value)} kg` : 'لم يتم التحديد'}
           color="#ef4444"
           defaultExpanded={false}
         >
-          <TreeNode
-            nodeId="threat-bomb"
-            label="القنبلة"
-            sublabel="—"
-            color="#fca5a5"
-          />
+          {bombs[0] && (
+            <TreeNode
+              nodeId="threat-bomb"
+              label={bombs[0].name}
+              sublabel={`${bombs[0].explosiveTypeRef} — ${Number(bombs[0].chargeMass.value)} kg`}
+              color="#fca5a5"
+            />
+          )}
+          {threats[0] && (
+            <TreeNode
+              nodeId="threat-info"
+              label="المسافة"
+              sublabel={`${Number(threats[0].standoffDistance.value)} m — ${threats[0].detonationType}`}
+              color="#fca5a5"
+            />
+          )}
         </TreeNode>
       </div>
     </div>
