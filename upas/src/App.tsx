@@ -2,6 +2,7 @@ import AppLayout from './components/layout/AppLayout';
 import Dashboard from './components/screens/Dashboard';
 import NewProject from './components/screens/NewProject';
 import AnalysisView from './components/screens/AnalysisView';
+import DatabaseView from './components/screens/DatabaseView';
 import { useUIStore } from './stores/uiStore';
 
 function PlaceholderScreen({ title, description }: { title: string; description: string }) {
@@ -68,6 +69,8 @@ export default function App() {
             description="هذه الشاشة قيد التطوير — ستتوفر قريباً"
           />
         );
+      case 'database':
+        return <DatabaseView />;
       default:
         return <Dashboard />;
     }

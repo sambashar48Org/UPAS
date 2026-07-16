@@ -1,6 +1,6 @@
 /**
  * UPAS — UI Store (Zustand)
- * Manages UI state: sidebar, modals, active view, loading states
+ * Sprint 2: Extended with 3D scene interaction state
  * Architecture Rule: NO business logic — only UI concerns
  */
 
@@ -13,13 +13,27 @@ export type AppView =
   | 'project-setup'
   | 'analysis'
   | 'results'
-  | 'settings';
+  | 'settings'
+  | 'database';
+
+// ─── Database sub-views ────────────────────────────────────────────
+export type DatabaseView = 'bombs' | 'materials' | 'soil-types' | 'structures' | 'standards' | 'projects';
+
+// ─── Selection types ───────────────────────────────────────────────
+export type SelectedObjectType = 'structure' | 'soil-layer' | 'threat' | 'bomb' | null;
+
+// ─── Camera preset ─────────────────────────────────────────────────
+export type CameraPreset = 'perspective' | 'top' | 'front' | 'side' | 'back';
 
 // ─── State Shape ───────────────────────────────────────────────────
 interface UIState {
   // Navigation
   activeView: AppView;
   setActiveView: (view: AppView) => void;
+
+  // Database view
+  databaseView: DatabaseView | null;
+  setDatabaseView: (view: DatabaseView | null) => void;
 
   // Sidebar
   sidebarOpen: boolean;
@@ -30,7 +44,7 @@ interface UIState {
   isGlobalLoading: boolean;
   setGlobalLoading: (loading: boolean) => void;
 
-  // Notifications (future)
+  // Notifications
   notifications: Array<{ id: string; message: string; type: 'info' | 'success' | 'error' | 'warning' }>;
   addNotification: (message: string, type: 'info' | 'success' | 'error' | 'warning') => void;
   dismissNotification: (id: string) => void;
@@ -40,6 +54,27 @@ interface UIState {
   setSceneReady: (ready: boolean) => void;
   sceneFPS: number;
   setSceneFPS: (fps: number) => void;
+
+  // ─── Sprint 2: Selection ────────────────────────────────────────
+  selectedObjectId: string | null;
+  selectedObjectType: SelectedObjectType;
+  setSelectedObject: (id: string | null, type: SelectedObjectType) => void;
+  clearSelection: () => void;
+
+  // ─── Sprint 2: Camera Presets ───────────────────────────────────
+  cameraPreset: CameraPreset;
+  setCameraPreset: (preset: CameraPreset) => void;
+
+  // ─── Sprint 2: Section View ─────────────────────────────────────
+  sectionViewEnabled: boolean;
+  toggleSectionView: () => void;
+  hiddenSoilLayers: number[];
+  toggleSoilLayerVisibility: (layerIndex: number) => void;
+  showAllSoilLayers: () => void;
+
+  // ─── Sprint 2: Properties Panel ─────────────────────────────────
+  propertiesPanelOpen: boolean;
+  setPropertiesPanelOpen: (open: boolean) => void;
 }
 
 // ─── Store ─────────────────────────────────────────────────────────
@@ -47,6 +82,10 @@ export const useUIStore = create<UIState>((set) => ({
   // Navigation
   activeView: 'dashboard',
   setActiveView: (view) => set({ activeView: view }),
+
+  // Database view
+  databaseView: null,
+  setDatabaseView: (view) => set({ databaseView: view }),
 
   // Sidebar
   sidebarOpen: true,
@@ -64,7 +103,6 @@ export const useUIStore = create<UIState>((set) => ({
     set((s) => ({
       notifications: [...s.notifications, { id, message, type }],
     }));
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
       set((s) => ({
         notifications: s.notifications.filter((n) => n.id !== id),
@@ -81,4 +119,38 @@ export const useUIStore = create<UIState>((set) => ({
   setSceneReady: (ready) => set({ sceneReady: ready }),
   sceneFPS: 0,
   setSceneFPS: (fps) => set({ sceneFPS: fps }),
+
+  // Selection
+  selectedObjectId: null,
+  selectedObjectType: null,
+  setSelectedObject: (id, type) => set({
+    selectedObjectId: id,
+    selectedObjectType: type,
+    propertiesPanelOpen: id !== null,
+  }),
+  clearSelection: () => set({
+    selectedObjectId: null,
+    selectedObjectType: null,
+    propertiesPanelOpen: false,
+  }),
+
+  // Camera Presets
+  cameraPreset: 'perspective',
+  setCameraPreset: (preset) => set({ cameraPreset: preset }),
+
+  // Section View
+  sectionViewEnabled: false,
+  toggleSectionView: () => set((s) => ({ sectionViewEnabled: !s.sectionViewEnabled })),
+  hiddenSoilLayers: [],
+  toggleSoilLayerVisibility: (layerIndex) => set((s) => {
+    const hidden = s.hiddenSoilLayers.includes(layerIndex)
+      ? s.hiddenSoilLayers.filter((i) => i !== layerIndex)
+      : [...s.hiddenSoilLayers, layerIndex];
+    return { hiddenSoilLayers: hidden };
+  }),
+  showAllSoilLayers: () => set({ hiddenSoilLayers: [] }),
+
+  // Properties Panel
+  propertiesPanelOpen: false,
+  setPropertiesPanelOpen: (open) => set({ propertiesPanelOpen: open }),
 }));

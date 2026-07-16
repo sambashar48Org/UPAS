@@ -1,10 +1,13 @@
-import { useUIStore, type AppView } from '../../stores/uiStore';
+import { useState } from 'react';
+import { useUIStore, type AppView, type DatabaseView } from '../../stores/uiStore';
 
-interface NavItem {
-  view: AppView;
-  label: string;
-  icon: React.ReactNode;
-}
+const DatabaseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+  </svg>
+);
 
 const DashboardIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,12 +23,6 @@ const NewProjectIcon = () => (
     <circle cx="12" cy="12" r="10" />
     <line x1="12" y1="8" x2="12" y2="16" />
     <line x1="8" y1="12" x2="16" y2="12" />
-  </svg>
-);
-
-const ProjectSetupIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 );
 
@@ -57,24 +54,52 @@ const CollapseIcon = () => (
   </svg>
 );
 
-const navItems: NavItem[] = [
+const ChevronDownIcon = ({ open }: { open: boolean }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+// ─── Navigation items ───────────────────────────────────────────────
+const navItems: Array<{ view: AppView; label: string; icon: React.ReactNode }> = [
   { view: 'dashboard', label: 'لوحة التحكم', icon: <DashboardIcon /> },
   { view: 'new-project', label: 'مشروع جديد', icon: <NewProjectIcon /> },
-  { view: 'project-setup', label: 'إعداد المشروع', icon: <ProjectSetupIcon /> },
   { view: 'analysis', label: 'التحليل', icon: <AnalysisIcon /> },
   { view: 'results', label: 'النتائج', icon: <ResultsIcon /> },
   { view: 'settings', label: 'الإعدادات', icon: <SettingsIcon /> },
 ];
 
+// ─── Database sub-items ─────────────────────────────────────────────
+const dbItems: Array<{ view: DatabaseView; label: string }> = [
+  { view: 'bombs', label: 'المتفجرات' },
+  { view: 'materials', label: 'المواد' },
+  { view: 'soil-types', label: 'أنواع التربة' },
+  { view: 'structures', label: 'المنشآت' },
+  { view: 'standards', label: 'المعايير' },
+  { view: 'projects', label: 'المشاريع' },
+];
+
 export default function Sidebar() {
   const activeView = useUIStore((s) => s.activeView);
+  const databaseView = useUIStore((s) => s.databaseView);
   const setActiveView = useUIStore((s) => s.setActiveView);
+  const setDatabaseView = useUIStore((s) => s.setDatabaseView);
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
 
+  const [dbExpanded, setDbExpanded] = useState(false);
+
+  const handleDbItemClick = (view: DatabaseView) => {
+    setDatabaseView(view);
+    setActiveView('database');
+  };
+
+  const isDbActive = activeView === 'database';
+
   return (
     <aside
-      className="flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out"
+      className="flex flex-col h-full shrink-0 transition-all duration-300 ease-in-out select-none"
       style={{
         width: sidebarOpen ? 'var(--upas-sidebar-width)' : '64px',
         backgroundColor: 'var(--upas-primary)',
@@ -102,17 +127,19 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Divider */}
       <div className="mx-3 border-t border-white/10" />
 
       {/* Navigation */}
       <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = activeView === item.view;
+          const isActive = activeView === item.view && !isDbActive;
           return (
             <button
               key={item.view}
-              onClick={() => setActiveView(item.view)}
+              onClick={() => {
+                setActiveView(item.view);
+                if (item.view !== 'database') setDatabaseView(null);
+              }}
               className={`
                 w-full flex items-center gap-3 rounded-lg text-sm font-medium
                 transition-colors duration-150 cursor-pointer
@@ -126,7 +153,7 @@ export default function Sidebar() {
               title={!sidebarOpen ? item.label : undefined}
             >
               <span
-                className={`shrink-0 ${isActive ? 'text-amber-400' : ''}`}
+                className="shrink-0"
                 style={{ color: isActive ? 'var(--upas-accent)' : undefined }}
               >
                 {item.icon}
@@ -135,6 +162,63 @@ export default function Sidebar() {
             </button>
           );
         })}
+
+        {/* Divider before Database */}
+        <div className="!my-3 mx-1 border-t border-white/10" />
+
+        {/* Database Section */}
+        <button
+          onClick={() => {
+            if (!sidebarOpen) {
+              setActiveView('database');
+              setDatabaseView('bombs');
+            } else {
+              setDbExpanded(!dbExpanded);
+            }
+          }}
+          className={`
+            w-full flex items-center gap-3 rounded-lg text-sm font-medium
+            transition-colors duration-150 cursor-pointer
+            ${sidebarOpen ? 'px-3 py-2.5' : 'px-0 py-2.5 justify-center'}
+            ${isDbActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'}
+          `}
+          title={!sidebarOpen ? 'قاعدة البيانات' : undefined}
+        >
+          <span className="shrink-0" style={{ color: isDbActive ? 'var(--upas-accent)' : undefined }}>
+            <DatabaseIcon />
+          </span>
+          {sidebarOpen && (
+            <>
+              <span className="truncate flex-1 text-right">قاعدة البيانات</span>
+              <ChevronDownIcon open={dbExpanded} />
+            </>
+          )}
+        </button>
+
+        {/* Database sub-items */}
+        {sidebarOpen && dbExpanded && (
+          <div className="mr-4 mt-1 space-y-0.5 border-r border-white/20 pr-3">
+            {dbItems.map((item) => {
+              const isActive = isDbActive && databaseView === item.view;
+              return (
+                <button
+                  key={item.view}
+                  onClick={() => handleDbItemClick(item.view)}
+                  className={`
+                    w-full text-right rounded-md px-3 py-1.5 text-xs font-medium
+                    transition-colors duration-150 cursor-pointer
+                    ${isActive
+                      ? 'bg-white/15 text-amber-400'
+                      : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                    }
+                  `}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* Toggle button */}
@@ -146,9 +230,7 @@ export default function Sidebar() {
             transition-colors duration-150 cursor-pointer"
           title={sidebarOpen ? 'طي القائمة' : 'توسيع القائمة'}
         >
-          <span
-            className={`transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`}
-          >
+          <span className={`transition-transform duration-300 ${sidebarOpen ? 'rotate-0' : 'rotate-180'}`}>
             <CollapseIcon />
           </span>
           {sidebarOpen && <span className="text-xs">طي القائمة</span>}

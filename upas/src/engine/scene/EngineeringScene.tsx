@@ -1,34 +1,57 @@
-import { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useCallback, useMemo } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
+import { useProjectStore } from '../../stores/projectStore';
 import { useUIStore } from '../../stores/uiStore';
 
+import CameraController from './CameraController';
+import ParametricStructure from './ParametricStructure';
+import SoilLayers3D from './SoilLayers3D';
+import EngineeringLabels from './EngineeringLabels';
+import DimensionLines from './DimensionLines';
+import SelectionManager from './SelectionManager';
+
+interface EngineeringSceneProps {
+  className?: string;
+  style?: React.CSSProperties;
+}
+
 function SceneContent() {
-  const setSceneFPS = useUIStore((s) => s.setSceneFPS);
-  const setSceneReady = useUIStore((s) => s.setSceneReady);
-  const frameCount = useRef(0);
-  const lastTime = useRef(performance.now());
+  const structure = useProjectStore((s) => s.structure);
+  const soilProfile = useProjectStore((s) => s.soilProfile);
 
-  useFrame(() => {
-    frameCount.current++;
-    const now = performance.now();
-    const delta = now - lastTime.current;
+  const selectedObjectId = useUIStore((s) => s.selectedObjectId);
+  const selectedObjectType = useUIStore((s) => s.selectedObjectType);
+  const setSelectedObject = useUIStore((s) => s.setSelectedObject);
+  const clearSelection = useUIStore((s) => s.clearSelection);
+  const hiddenSoilLayers = useUIStore((s) => s.hiddenSoilLayers);
 
-    if (delta >= 1000) {
-      const fps = Math.round((frameCount.current * 1000) / delta);
-      setSceneFPS(fps);
-      frameCount.current = 0;
-      lastTime.current = now;
+  const isStructureSelected =
+    selectedObjectType === 'structure' && selectedObjectId === structure?.id;
+
+  const selectedLayerIndex = useMemo(() => {
+    if (selectedObjectType !== 'soil-layer' || !soilProfile || !selectedObjectId) return null;
+    const found = soilProfile.layers.find((l) => l.id === selectedObjectId);
+    return found ? found.layerIndex : null;
+  }, [selectedObjectType, selectedObjectId, soilProfile]);
+
+  const handleStructureSelect = useCallback(() => {
+    if (structure) {
+      setSelectedObject(structure.id, 'structure');
     }
-  });
+  }, [structure, setSelectedObject]);
 
-  // Signal scene ready on first frame
-  useFrame(() => {
-    if (!useUIStore.getState().sceneReady) {
-      setSceneReady(true);
-    }
-  });
+  const handleLayerSelect = useCallback(
+    (index: number) => {
+      if (soilProfile) {
+        const layer = soilProfile.layers.find((l) => l.layerIndex === index);
+        if (layer) {
+          setSelectedObject(layer.id, 'soil-layer');
+        }
+      }
+    },
+    [soilProfile, setSelectedObject]
+  );
 
   return (
     <>
@@ -42,58 +65,70 @@ function SceneContent() {
         shadow-mapSize-height={2048}
       />
 
-      {/* Camera */}
-      <EngineerCamera position={[15, 12, 15]} fov={50} />
-
-      {/* Engineering reference grid */}
-      <gridHelper
-        args={[20, 20, '#94a3b8', '#cbd5e1']}
-        position={[0, 0, 0]}
-      />
-
-      {/* XYZ Axes */}
-      <axesHelper args={[5]} />
-
-      {/* Controls */}
+      {/* Camera + Controls */}
+      <CameraController />
       <OrbitControls
         makeDefault
         target={[0, -2, 0]}
-        minDistance={5}
+        minDistance={3}
         maxDistance={60}
         enableDamping
         dampingFactor={0.1}
       />
+
+      {/* Ground Grid */}
+      <gridHelper args={[40, 40, '#94a3b8', '#cbd5e1']} position={[0, 0, 0]} />
+      <axesHelper args={[5]} />
+
+      {/* Ground plane — click to deselect */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          clearSelection();
+        }}
+      >
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {/* Scene Objects */}
+      {soilProfile && (
+        <SoilLayers3D
+          soilProfile={soilProfile}
+          hiddenLayers={hiddenSoilLayers}
+          onLayerSelect={handleLayerSelect}
+          selectedLayerIndex={selectedLayerIndex}
+        />
+      )}
+
+      {structure && (
+        <ParametricStructure
+          structure={structure}
+          isSelected={isStructureSelected}
+          onSelect={handleStructureSelect}
+        />
+      )}
+
+      {structure && <EngineeringLabels structure={structure} soilProfile={soilProfile} />}
+      {structure && <DimensionLines structure={structure} />}
+
+      {/* FPS counter + scene ready signal */}
+      <SelectionManager />
     </>
   );
 }
 
-/** Camera that continuously looks at the scene origin */
-function EngineerCamera({
-  position,
-  fov,
-}: {
-  position: [number, number, number];
-  fov: number;
-}) {
-  const ref = useRef<THREE.PerspectiveCamera>(null);
-
-  useFrame(() => {
-    if (ref.current) {
-      ref.current.lookAt(0, -2, 0);
-    }
-  });
-
-  return <perspectiveCamera ref={ref} position={position} fov={fov} />;
-}
-
-export default function EngineeringScene() {
+export default function EngineeringScene({ className, style }: EngineeringSceneProps) {
   return (
-    <div className="w-full h-full relative">
+    <div className={className} style={style}>
       <Canvas
         style={{ backgroundColor: '#e2e8f0' }}
         gl={{ antialias: true, alpha: false }}
         dpr={[1, 2]}
         performance={{ min: 0.5 }}
+        shadows
       >
         <Suspense fallback={null}>
           <SceneContent />

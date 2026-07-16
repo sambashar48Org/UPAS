@@ -8,6 +8,7 @@ const viewLabels: Record<AppView, string> = {
   analysis: 'التحليل',
   results: 'النتائج',
   settings: 'الإعدادات',
+  database: 'قاعدة البيانات',
 };
 
 const GearIcon = () => (
