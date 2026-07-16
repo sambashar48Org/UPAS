@@ -8,9 +8,12 @@ export default function SectionViewControls() {
   const hiddenSoilLayers = useUIStore((s) => s.hiddenSoilLayers);
   const toggleSoilLayerVisibility = useUIStore((s) => s.toggleSoilLayerVisibility);
   const showAllSoilLayers = useUIStore((s) => s.showAllSoilLayers);
+  const visualizationMode = useUIStore((s) => s.visualizationMode);
 
   const soilProfile = useProjectStore((s) => s.soilProfile);
 
+  // Only show in cutaway mode or normal mode
+  if (visualizationMode === 'surface' || visualizationMode === 'xray') return null;
   if (!soilProfile) return null;
 
   return (
@@ -25,13 +28,13 @@ export default function SectionViewControls() {
         className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors hover:bg-black/5"
         style={{ color: 'var(--upas-text-primary, #1e293b)' }}
       >
-        <span>عرض مقطعي</span>
+        <span>إخفاء الطبقات</span>
         <span className="text-base leading-none">{sectionViewEnabled ? '▲' : '▼'}</span>
       </button>
 
       {/* Layer list */}
       {sectionViewEnabled && (
-        <div className="border-t px-3 py-2 max-h-64 overflow-y-auto" style={{ borderColor: 'var(--upas-border, #e2e8f0)' }}>
+        <div className="border-t px-3 py-2 max-h-48 overflow-y-auto" style={{ borderColor: 'var(--upas-border, #e2e8f0)' }}>
           {soilProfile.layers.map((layer) => {
             const isHidden = hiddenSoilLayers.includes(layer.layerIndex);
             return (

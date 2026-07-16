@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { StructureType } from '../../types';
 import type { Structure } from '../../models/Structure';
+import { useUIStore } from '../../stores/uiStore';
 
 interface ParametricStructureProps {
   structure: Structure;
@@ -11,21 +12,36 @@ interface ParametricStructureProps {
   onSelect: () => void;
 }
 
-function getMaterial(isSelected: boolean) {
+const CONCRETE_COLOR = '#a8b5c4';
+const CONCRETE_SELECTED = '#f97316';
+const CONCRETE_ROOF_COLOR = '#8fa4b8';
+const CONCRETE_FLOOR_COLOR = '#7a8a96';
+
+function getPartMaterial(
+  isSelected: boolean,
+  partSelected: boolean,
+  baseColor: string,
+  highlight: string,
+) {
+  const active = isSelected || partSelected;
   return new THREE.MeshStandardMaterial({
-    color: isSelected ? '#f97316' : '#6b7280',
-    transparent: true,
-    opacity: isSelected ? 0.55 : 0.4,
-    roughness: isSelected ? 0.4 : 0.6,
+    color: active ? highlight : baseColor,
+    transparent: false,
+    opacity: 1,
+    roughness: active ? 0.4 : 0.65,
+    metalness: 0.05,
     side: THREE.DoubleSide,
-    depthWrite: false,
-    emissive: isSelected ? '#f97316' : '#000000',
-    emissiveIntensity: isSelected ? 0.15 : 0,
+    emissive: active ? highlight : '#000000',
+    emissiveIntensity: active ? 0.08 : 0,
   });
 }
 
 /* ─────────── BOX ─────────── */
 function BoxStructure({ structure, isSelected, onSelect }: ParametricStructureProps) {
+  const selectedPart = useUIStore((s) => s.selectedStructurePart);
+  const setSelectedObject = useUIStore((s) => s.setSelectedObject);
+  const setSelectedStructurePart = useUIStore((s) => s.setSelectedStructurePart);
+
   const len = Number(structure.length.value);
   const wid = Number(structure.width.value);
   const hgt = Number(structure.height.value);
@@ -35,40 +51,61 @@ function BoxStructure({ structure, isSelected, onSelect }: ParametricStructurePr
   const bd = Number(structure.burialDepth.value);
 
   const centerY = -bd - hgt / 2;
-  const mat = useMemo(() => getMaterial(isSelected), [isSelected]);
-
   const wallH = Math.max(0.01, hgt - rt - ft);
 
+  const roofMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'roof', CONCRETE_ROOF_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const wallMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'wall', CONCRETE_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const floorMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'floor', CONCRETE_FLOOR_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+
+  const handleRoofClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('roof'); };
+  const handleWallClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('wall'); };
+  const handleFloorClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('floor'); };
+
   const parts = useMemo(() => {
-    const p: Array<{ key: string; pos: [number, number, number]; args: [number, number, number] }> = [];
-    // Floor
-    p.push({ key: 'floor', pos: [0, centerY - hgt / 2 + ft / 2, 0], args: [len, ft, wid] });
-    // Roof
-    p.push({ key: 'roof', pos: [0, centerY + hgt / 2 - rt / 2, 0], args: [len, rt, wid] });
-    // Front wall +Z
-    p.push({ key: 'front', pos: [0, centerY, wid / 2 - wt / 2], args: [len, wallH, wt] });
-    // Back wall -Z
-    p.push({ key: 'back', pos: [0, centerY, -(wid / 2 - wt / 2)], args: [len, wallH, wt] });
-    // Left wall -X
-    p.push({ key: 'left', pos: [-(len / 2 - wt / 2), centerY, 0], args: [wt, wallH, wid] });
-    // Right wall +X
-    p.push({ key: 'right', pos: [len / 2 - wt / 2, centerY, 0], args: [wt, wallH, wid] });
+    const p: Array<{ key: string; part: 'roof' | 'wall' | 'floor'; pos: [number, number, number]; args: [number, number, number] }> = [];
+    p.push({ key: 'floor', part: 'floor', pos: [0, centerY - hgt / 2 + ft / 2, 0], args: [len, ft, wid] });
+    p.push({ key: 'roof', part: 'roof', pos: [0, centerY + hgt / 2 - rt / 2, 0], args: [len, rt, wid] });
+    p.push({ key: 'front', part: 'wall', pos: [0, centerY, wid / 2 - wt / 2], args: [len, wallH, wt] });
+    p.push({ key: 'back', part: 'wall', pos: [0, centerY, -(wid / 2 - wt / 2)], args: [len, wallH, wt] });
+    p.push({ key: 'left', part: 'wall', pos: [-(len / 2 - wt / 2), centerY, 0], args: [wt, wallH, wid] });
+    p.push({ key: 'right', part: 'wall', pos: [len / 2 - wt / 2, centerY, 0], args: [wt, wallH, wid] });
     return p;
   }, [len, wid, hgt, wt, rt, ft, centerY, wallH]);
 
+  const getMat = (part: 'roof' | 'wall' | 'floor') => {
+    if (part === 'roof') return roofMat;
+    if (part === 'floor') return floorMat;
+    return wallMat;
+  };
+
+  const getHandler = (part: 'roof' | 'wall' | 'floor') => {
+    if (part === 'roof') return handleRoofClick;
+    if (part === 'floor') return handleFloorClick;
+    return handleWallClick;
+  };
+
   return (
-    <group onPointerDown={(e) => { e.stopPropagation(); onSelect(); }}>
+    <group>
       {parts.map((w) => (
-        <mesh key={w.key} position={w.pos} material={mat}>
+        <mesh key={w.key} position={w.pos} material={getMat(w.part)} onPointerDown={getHandler(w.part)}>
           <boxGeometry args={w.args} />
         </mesh>
       ))}
+
+      {/* Wireframe edges for structure clarity */}
+      <lineSegments position={[0, centerY, 0]}>
+        <edgesGeometry args={[new THREE.BoxGeometry(len, hgt, wid)]} />
+        <lineBasicMaterial color="#1e3a5f" transparent opacity={0.2} />
+      </lineSegments>
     </group>
   );
 }
 
 /* ─────────── ARCH ─────────── */
 function ArchStructure({ structure, isSelected, onSelect }: ParametricStructureProps) {
+  const selectedPart = useUIStore((s) => s.selectedStructurePart);
+  const setSelectedStructurePart = useUIStore((s) => s.setSelectedStructurePart);
+
   const len = Number(structure.length.value);
   const wid = Number(structure.width.value);
   const hgt = Number(structure.height.value);
@@ -78,49 +115,54 @@ function ArchStructure({ structure, isSelected, onSelect }: ParametricStructureP
   const bd = Number(structure.burialDepth.value);
 
   const centerY = -bd - hgt / 2;
-  const mat = useMemo(() => getMaterial(isSelected), [isSelected]);
 
-  // The arch radius equals width/2, the remaining height below the arch is for rectangular walls
+  const roofMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'roof', CONCRETE_ROOF_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const wallMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'wall', CONCRETE_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+  const floorMat = useMemo(() => getPartMaterial(isSelected, selectedPart === 'floor', CONCRETE_FLOOR_COLOR, CONCRETE_SELECTED), [isSelected, selectedPart]);
+
   const archRadius = wid / 2;
   const wallH = Math.max(0.01, hgt - archRadius - ft);
 
+  const handleRoofClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('roof'); };
+  const handleWallClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('wall'); };
+  const handleFloorClick = (e: React.MouseEvent) => { e.stopPropagation(); onSelect(); setSelectedStructurePart('floor'); };
+
   return (
-    <group onPointerDown={(e) => { e.stopPropagation(); onSelect(); }}>
+    <group>
       {/* Floor */}
-      <mesh position={[0, centerY - hgt / 2 + ft / 2, 0]} material={mat}>
+      <mesh position={[0, centerY - hgt / 2 + ft / 2, 0]} material={floorMat} onPointerDown={handleFloorClick}>
         <boxGeometry args={[len, ft, wid]} />
       </mesh>
 
-      {/* Front wall +Z */}
-      <mesh position={[0, centerY - hgt / 2 + ft + wallH / 2, wid / 2 - wt / 2]} material={mat}>
+      {/* Walls */}
+      <mesh position={[0, centerY - hgt / 2 + ft + wallH / 2, wid / 2 - wt / 2]} material={wallMat} onPointerDown={handleWallClick}>
         <boxGeometry args={[len, wallH, wt]} />
       </mesh>
-
-      {/* Back wall -Z */}
-      <mesh position={[0, centerY - hgt / 2 + ft + wallH / 2, -(wid / 2 - wt / 2)]} material={mat}>
+      <mesh position={[0, centerY - hgt / 2 + ft + wallH / 2, -(wid / 2 - wt / 2)]} material={wallMat} onPointerDown={handleWallClick}>
         <boxGeometry args={[len, wallH, wt]} />
       </mesh>
-
-      {/* Left wall -X */}
-      <mesh position={[-(len / 2 - wt / 2), centerY - hgt / 2 + ft + wallH / 2, 0]} material={mat}>
+      <mesh position={[-(len / 2 - wt / 2), centerY - hgt / 2 + ft + wallH / 2, 0]} material={wallMat} onPointerDown={handleWallClick}>
+        <boxGeometry args={[wt, wallH, wid]} />
+      </mesh>
+      <mesh position={[len / 2 - wt / 2, centerY - hgt / 2 + ft + wallH / 2, 0]} material={wallMat} onPointerDown={handleWallClick}>
         <boxGeometry args={[wt, wallH, wid]} />
       </mesh>
 
-      {/* Right wall +X */}
-      <mesh position={[len / 2 - wt / 2, centerY - hgt / 2 + ft + wallH / 2, 0]} material={mat}>
-        <boxGeometry args={[wt, wallH, wid]} />
-      </mesh>
-
-      {/* Arch roof — half-cylinder along the LENGTH (X) axis */}
-      {/* Default cylinder axis = Y. Rotate Z by PI/2 to make axis = X. */}
-      {/* Arch sits on top of the walls */}
+      {/* Arch roof */}
       <mesh
         position={[0, centerY - hgt / 2 + ft + wallH, 0]}
         rotation={[0, 0, Math.PI / 2]}
-        material={mat}
+        material={roofMat}
+        onPointerDown={handleRoofClick}
       >
         <cylinderGeometry args={[archRadius, archRadius, len, 32, 1, false, 0, Math.PI]} />
       </mesh>
+
+      {/* Wireframe outline */}
+      <lineSegments position={[0, centerY, 0]}>
+        <edgesGeometry args={[new THREE.BoxGeometry(len, hgt, wid)]} />
+        <lineBasicMaterial color="#1e3a5f" transparent opacity={0.15} />
+      </lineSegments>
     </group>
   );
 }
@@ -135,14 +177,13 @@ function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructure
   const bd = Number(structure.burialDepth.value);
 
   const centerY = -bd - hgt / 2;
-  const mat = useMemo(() => getMaterial(isSelected), [isSelected]);
+  const mat = useMemo(() => getPartMaterial(isSelected, false, CONCRETE_COLOR, CONCRETE_SELECTED), [isSelected]);
 
   const outerR = wid / 2;
   const innerR = Math.max(0.01, outerR - wt);
 
   return (
     <group onPointerDown={(e) => { e.stopPropagation(); onSelect(); }}>
-      {/* Outer cylinder — horizontal along X axis */}
       <mesh
         position={[0, centerY, 0]}
         rotation={[0, 0, Math.PI / 2]}
@@ -150,8 +191,6 @@ function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructure
       >
         <cylinderGeometry args={[outerR, outerR, len, 32, 1, false]} />
       </mesh>
-
-      {/* Inner cylinder (hollow core) */}
       <mesh
         position={[0, centerY, 0]}
         rotation={[0, 0, Math.PI / 2]}
@@ -159,8 +198,6 @@ function CylinderTunnel({ structure, isSelected, onSelect }: ParametricStructure
       >
         <cylinderGeometry args={[innerR, innerR, len, 32, 1, false]} />
       </mesh>
-
-      {/* Floor slab at the bottom */}
       <mesh
         position={[0, centerY - outerR + ft / 2, 0]}
         material={mat}

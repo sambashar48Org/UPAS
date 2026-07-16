@@ -66,4 +66,30 @@ Stage Summary:
 - calculations/ directory remains empty as instructed
 - 46/46 tests passing
 - TypeScript zero errors
-- 9 screenshots saved to /home/z/my-project/download/
+- 9 screenshots saved to /home/z/my-project/download/---
+Task ID: 1
+Agent: Main Agent
+Task: Sprint 2.5 — Engineering Visualization Upgrade
+
+Work Log:
+- Read all existing Sprint 2 source files (12 files) to understand current state
+- Updated uiStore.ts: Added VisualizationMode (normal/surface/cutaway/xray), AutoFit, StructurePart selection, ObjectTree state
+- Rewrote CameraController.tsx: Added bounding-box-based auto-fit camera (like AutoCAD/Revit), dynamic orbit target based on structure
+- Rewrote SoilLayers3D.tsx: 3 visualization modes (Surface=hide soil, Cutaway=clipping plane z>0, X-Ray=transparent+wireframe), reduced SIZE from 30→16 for better proportions
+- Rewrote ParametricStructure.tsx: Per-part materials (roof/wall/floor), click-to-select individual parts, wireframe edge overlay, better concrete colors
+- Rewrote EngineeringLabels.tsx: Structured labels with name+type+dimensions+material, ground level marker (±0.00), per-part labels (roof/wall/floor thickness)
+- Rewrote DimensionLines.tsx: Arrow heads, extension lines from object to dimension line, engineering-style annotation boxes
+- Created ObjectTree.tsx: Revit-style tree (Ground > Soil Layers, Structure > Roof/Walls/Floor, Threat > Bomb), click-to-select
+- Created VisualizationModeControls.tsx: 4 mode buttons + Auto-fit button
+- Rewrote PropertiesPanel.tsx: Real engineering data from JSON (soil type properties, material names, DIF values), per-part detail views
+- Updated SectionViewControls.tsx: Only visible in normal/cutaway modes
+- Updated EngineeringScene.tsx: localClippingEnabled for cutaway, dynamic orbit target, fill light
+- Updated AnalysisView/index.tsx: 3-panel layout (ObjectTree | 3D Scene | Properties), mode indicator badge, z-index fix
+
+Stage Summary:
+- 7 files modified, 3 files created
+- All 46 tests pass, TypeScript clean, production build succeeds
+- 6 high-quality screenshots captured showing all features
+- calculations/ directory remains EMPTY as required
+- No GLTF models used — everything parametric
+

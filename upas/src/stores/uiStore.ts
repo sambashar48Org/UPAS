@@ -1,6 +1,7 @@
 /**
  * UPAS — UI Store (Zustand)
  * Sprint 2: Extended with 3D scene interaction state
+ * Sprint 2.5: Visualization modes, auto-fit, structure part selection
  * Architecture Rule: NO business logic — only UI concerns
  */
 
@@ -20,10 +21,16 @@ export type AppView =
 export type DatabaseView = 'bombs' | 'materials' | 'soil-types' | 'structures' | 'standards' | 'projects';
 
 // ─── Selection types ───────────────────────────────────────────────
-export type SelectedObjectType = 'structure' | 'soil-layer' | 'threat' | 'bomb' | null;
+export type SelectedObjectType = 'structure' | 'soil-layer' | 'structure-part' | 'threat' | 'bomb' | null;
+
+// ─── Structure sub-parts ───────────────────────────────────────────
+export type StructurePart = 'roof' | 'wall' | 'floor' | null;
 
 // ─── Camera preset ─────────────────────────────────────────────────
-export type CameraPreset = 'perspective' | 'top' | 'front' | 'side' | 'back';
+export type CameraPreset = 'perspective' | 'top' | 'front' | 'side' | 'back' | 'fit';
+
+// ─── Visualization Mode (Sprint 2.5) ──────────────────────────────
+export type VisualizationMode = 'normal' | 'surface' | 'cutaway' | 'xray';
 
 // ─── State Shape ───────────────────────────────────────────────────
 interface UIState {
@@ -61,9 +68,21 @@ interface UIState {
   setSelectedObject: (id: string | null, type: SelectedObjectType) => void;
   clearSelection: () => void;
 
+  // ─── Sprint 2.5: Structure part selection ───────────────────────
+  selectedStructurePart: StructurePart;
+  setSelectedStructurePart: (part: StructurePart) => void;
+
   // ─── Sprint 2: Camera Presets ───────────────────────────────────
   cameraPreset: CameraPreset;
   setCameraPreset: (preset: CameraPreset) => void;
+
+  // ─── Sprint 2.5: Auto Fit ──────────────────────────────────────
+  autoFitRequested: boolean;
+  requestAutoFit: () => void;
+
+  // ─── Sprint 2.5: Visualization Mode ────────────────────────────
+  visualizationMode: VisualizationMode;
+  setVisualizationMode: (mode: VisualizationMode) => void;
 
   // ─── Sprint 2: Section View ─────────────────────────────────────
   sectionViewEnabled: boolean;
@@ -75,6 +94,10 @@ interface UIState {
   // ─── Sprint 2: Properties Panel ─────────────────────────────────
   propertiesPanelOpen: boolean;
   setPropertiesPanelOpen: (open: boolean) => void;
+
+  // ─── Sprint 2.5: Object Tree ────────────────────────────────────
+  objectTreeExpanded: Record<string, boolean>;
+  toggleObjectTreeNode: (nodeId: string) => void;
 }
 
 // ─── Store ─────────────────────────────────────────────────────────
@@ -126,17 +149,31 @@ export const useUIStore = create<UIState>((set) => ({
   setSelectedObject: (id, type) => set({
     selectedObjectId: id,
     selectedObjectType: type,
+    selectedStructurePart: type === 'structure-part' ? null : null,
     propertiesPanelOpen: id !== null,
   }),
   clearSelection: () => set({
     selectedObjectId: null,
     selectedObjectType: null,
+    selectedStructurePart: null,
     propertiesPanelOpen: false,
   }),
 
+  // Structure part selection
+  selectedStructurePart: null,
+  setSelectedStructurePart: (part) => set({ selectedStructurePart: part }),
+
   // Camera Presets
-  cameraPreset: 'perspective',
+  cameraPreset: 'fit',
   setCameraPreset: (preset) => set({ cameraPreset: preset }),
+
+  // Auto Fit
+  autoFitRequested: false,
+  requestAutoFit: () => set({ autoFitRequested: true, cameraPreset: 'fit' }),
+
+  // Visualization Mode
+  visualizationMode: 'normal',
+  setVisualizationMode: (mode) => set({ visualizationMode: mode }),
 
   // Section View
   sectionViewEnabled: false,
@@ -153,4 +190,10 @@ export const useUIStore = create<UIState>((set) => ({
   // Properties Panel
   propertiesPanelOpen: false,
   setPropertiesPanelOpen: (open) => set({ propertiesPanelOpen: open }),
+
+  // Object Tree
+  objectTreeExpanded: { ground: true, structure: true, threat: false },
+  toggleObjectTreeNode: (nodeId) => set((s) => ({
+    objectTreeExpanded: { ...s.objectTreeExpanded, [nodeId]: !s.objectTreeExpanded[nodeId] },
+  })),
 }));

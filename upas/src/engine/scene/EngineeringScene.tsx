@@ -25,9 +25,11 @@ function SceneContent() {
   const setSelectedObject = useUIStore((s) => s.setSelectedObject);
   const clearSelection = useUIStore((s) => s.clearSelection);
   const hiddenSoilLayers = useUIStore((s) => s.hiddenSoilLayers);
+  const visualizationMode = useUIStore((s) => s.visualizationMode);
 
   const isStructureSelected =
-    selectedObjectType === 'structure' && selectedObjectId === structure?.id;
+    (selectedObjectType === 'structure' || selectedObjectType === 'structure-part') &&
+    selectedObjectId === structure?.id;
 
   const selectedLayerIndex = useMemo(() => {
     if (selectedObjectType !== 'soil-layer' || !soilProfile || !selectedObjectId) return null;
@@ -53,32 +55,51 @@ function SceneContent() {
     [soilProfile, setSelectedObject]
   );
 
+  // Determine the orbit target based on structure
+  const orbitTarget = useMemo((): [number, number, number] => {
+    if (structure) {
+      const bd = Number(structure.burialDepth.value);
+      const hgt = Number(structure.height.value);
+      return [0, -bd - hgt / 2, 0];
+    }
+    if (soilProfile) {
+      const totalDepth = Number(soilProfile.totalDepth.value);
+      return [0, -totalDepth / 2, 0];
+    }
+    return [0, -2, 0];
+  }, [structure, soilProfile]);
+
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.5} />
       <directionalLight
         position={[10, 15, 10]}
-        intensity={1.0}
+        intensity={1.2}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
+      />
+      {/* Fill light from opposite side */}
+      <directionalLight
+        position={[-8, 5, -8]}
+        intensity={0.3}
       />
 
       {/* Camera + Controls */}
       <CameraController />
       <OrbitControls
         makeDefault
-        target={[0, -2, 0]}
-        minDistance={3}
+        target={orbitTarget}
+        minDistance={2}
         maxDistance={60}
         enableDamping
         dampingFactor={0.1}
       />
 
       {/* Ground Grid */}
-      <gridHelper args={[40, 40, '#94a3b8', '#cbd5e1']} position={[0, 0, 0]} />
-      <axesHelper args={[5]} />
+      <gridHelper args={[20, 20, '#94a3b8', '#cbd5e1']} position={[0, 0, 0]} />
+      <axesHelper args={[3]} />
 
       {/* Ground plane — click to deselect */}
       <mesh
@@ -124,8 +145,8 @@ export default function EngineeringScene({ className, style }: EngineeringSceneP
   return (
     <div className={className} style={style}>
       <Canvas
-        style={{ backgroundColor: '#e2e8f0' }}
-        gl={{ antialias: true, alpha: false }}
+        style={{ backgroundColor: '#e8edf3' }}
+        gl={{ antialias: true, alpha: false, localClippingEnabled: true }}
         dpr={[1, 2]}
         performance={{ min: 0.5 }}
         shadows
