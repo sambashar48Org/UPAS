@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment
+.env
+.env.*
+
+# Screenshots & temp
+screenshots/
+*.tmp
+
+# OS
+Thumbs.db
