@@ -93,3 +93,30 @@ Stage Summary:
 - calculations/ directory remains EMPTY as required
 - No GLTF models used — everything parametric
 
+---
+Task ID: 3B
+Agent: Alpha (Main)
+Task: Sprint 3B — Analysis Pipeline Integration & Results
+
+Work Log:
+- Created AnalysisPipeline service (src/services/analysis/) — validate → calculate → convert → report
+- Created Visualization layer (src/visualization/) — 3 adapters + 3 ViewModel types
+- Created Demo Project factory (src/data/demoProject.ts) — reusable test scenario
+- Created Input Forms (Soil/Structure/Threat) with database-driven dropdowns
+- Created Results Panel reading ResultViewModel (never FullAnalysisResult)
+- Created Report Viewer reading ReportViewModel (isolated from calculations)
+- Created 3D Components: ThreatObject3D, DamageZones3D, CutPlane with depth slider
+- Created AnalysisToolbar (Run button + tab selector)
+- Created useAnalysisPipeline hook (thin React wrapper)
+- Updated stores (projectStore: isAnalyzing/lastFullResult/lastReport; uiStore: analysisTab/cutPlaneDepth/toggles)
+- Updated EngineeringScene, ObjectTree, VisualizationModeControls
+- Rewrote AnalysisView with full pipeline integration
+- Added 17 new tests (106 total, all passing)
+- AC-13 verified: headless analysis without UI
+
+Stage Summary:
+- 19 files created, 8 files modified
+- 106 tests passing (0 failures)
+- TypeScript: 0 errors
+- Build: successful (382 KB gzip)
+- Architecture: strict layer separation maintained (UI → Services → Calculations, VisualizationAdapter → 3D)
