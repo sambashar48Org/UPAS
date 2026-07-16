@@ -1,0 +1,97 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-07-16",
+  "soilTypes": [
+    {
+      "ref": "sand_loose",
+      "name": "Loose Sand",
+      "nameAr": "رمل مفكوك",
+      "category": "cohesiveless",
+      "unitWeight": { "value": 16, "unit": "kN/m³" },
+      "frictionAngle": { "value": 28, "unit": "deg" },
+      "cohesion": { "value": 0, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 20, "unit": "MPa" },
+      "poissonRatio": 0.3,
+      "waveVelocity": { "value": 200, "unit": "m/s" },
+      "description": "Loose granular soil — low confinement"
+    },
+    {
+      "ref": "sand_medium",
+      "name": "Medium Sand",
+      "nameAr": "رمل متوسط الكثافة",
+      "category": "cohesiveless",
+      "unitWeight": { "value": 18, "unit": "kN/m³" },
+      "frictionAngle": { "value": 33, "unit": "deg" },
+      "cohesion": { "value": 0, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 40, "unit": "MPa" },
+      "poissonRatio": 0.28,
+      "waveVelocity": { "value": 300, "unit": "m/s" },
+      "description": "Medium dense sand — common foundation soil"
+    },
+    {
+      "ref": "sand_dense",
+      "name": "Dense Sand",
+      "nameAr": "رمل كثيف",
+      "category": "cohesiveless",
+      "unitWeight": { "value": 20, "unit": "kN/m³" },
+      "frictionAngle": { "value": 40, "unit": "deg" },
+      "cohesion": { "value": 0, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 60, "unit": "MPa" },
+      "poissonRatio": 0.25,
+      "waveVelocity": { "value": 450, "unit": "m/s" },
+      "description": "Dense granular soil — high bearing capacity"
+    },
+    {
+      "ref": "clay_soft",
+      "name": "Soft Clay",
+      "nameAr": "طين رخو",
+      "category": "cohesive",
+      "unitWeight": { "value": 16, "unit": "kN/m³" },
+      "frictionAngle": { "value": 0, "unit": "deg" },
+      "cohesion": { "value": 25, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 8, "unit": "MPa" },
+      "poissonRatio": 0.4,
+      "waveVelocity": { "value": 150, "unit": "m/s" },
+      "description": "Soft cohesive soil — low shear strength"
+    },
+    {
+      "ref": "clay_stiff",
+      "name": "Stiff Clay",
+      "nameAr": "طين صلب",
+      "category": "cohesive",
+      "unitWeight": { "value": 19, "unit": "kN/m³" },
+      "frictionAngle": { "value": 15, "unit": "deg" },
+      "cohesion": { "value": 75, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 30, "unit": "MPa" },
+      "poissonRatio": 0.35,
+      "waveVelocity": { "value": 300, "unit": "m/s" },
+      "description": "Stiff cohesive soil — moderate strength"
+    },
+    {
+      "ref": "rock_weathered",
+      "name": "Weathered Rock",
+      "nameAr": "صخر متآكل",
+      "category": "rock",
+      "unitWeight": { "value": 22, "unit": "kN/m³" },
+      "frictionAngle": { "value": 35, "unit": "deg" },
+      "cohesion": { "value": 200, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 5000, "unit": "MPa" },
+      "poissonRatio": 0.25,
+      "waveVelocity": { "value": 1500, "unit": "m/s" },
+      "description": "Weathered/fractured rock — reduced properties"
+    },
+    {
+      "ref": "rock_sound",
+      "name": "Sound Rock",
+      "nameAr": "صخر سليم",
+      "category": "rock",
+      "unitWeight": { "value": 26, "unit": "kN/m³" },
+      "frictionAngle": { "value": 45, "unit": "deg" },
+      "cohesion": { "value": 1000, "unit": "kPa" },
+      "modulusOfElasticity": { "value": 30000, "unit": "MPa" },
+      "poissonRatio": 0.2,
+      "waveVelocity": { "value": 3500, "unit": "m/s" },
+      "description": "Intact rock mass — high strength"
+    }
+  ]
+}

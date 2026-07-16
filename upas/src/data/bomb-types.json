@@ -1,0 +1,76 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-07-16",
+  "bombTypes": [
+    {
+      "ref": "TNT",
+      "name": "TNT",
+      "nameAr": "تي إن تي",
+      "density": { "value": 1600, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 6930, "unit": "m/s" },
+      "energyRelease": { "value": 4.184, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 1.0,
+      "description": "Trinitrotoluene — standard reference explosive"
+    },
+    {
+      "ref": "C4",
+      "name": "C-4",
+      "nameAr": "سي فور",
+      "density": { "value": 1600, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 8040, "unit": "m/s" },
+      "energyRelease": { "value": 5.86, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 1.4,
+      "description": "Plastic explosive — military grade"
+    },
+    {
+      "ref": "ANFO",
+      "name": "ANFO",
+      "nameAr": "أنفو",
+      "density": { "value": 850, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 4500, "unit": "m/s" },
+      "energyRelease": { "value": 3.89, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 0.93,
+      "description": "Ammonium Nitrate Fuel Oil — common industrial explosive"
+    },
+    {
+      "ref": "RDX",
+      "name": "RDX",
+      "nameAr": "أر دي إكس",
+      "density": { "value": 1760, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 8750, "unit": "m/s" },
+      "energyRelease": { "value": 5.63, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 1.35,
+      "description": "Royal Demolition eXplosive — high performance military"
+    },
+    {
+      "ref": "PETN",
+      "name": "PETN",
+      "nameAr": "بترن",
+      "density": { "value": 1770, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 8400, "unit": "m/s" },
+      "energyRelease": { "value": 5.86, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 1.4,
+      "description": "Pentaerythritol Tetranitrate — very high brisance"
+    },
+    {
+      "ref": "PIPE_BOMB",
+      "name": "Pipe Bomb (Generic)",
+      "nameAr": "قنبلة أنبوبية",
+      "density": { "value": 1200, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 3000, "unit": "m/s" },
+      "energyRelease": { "value": 2.5, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 0.6,
+      "description": "Improvised explosive device in pipe casing"
+    },
+    {
+      "ref": "VBIED",
+      "name": "VBIED (Generic)",
+      "nameAr": "سيارة مفخخة",
+      "density": { "value": 1000, "unit": "kg/m³" },
+      "detonationVelocity": { "value": 4500, "unit": "m/s" },
+      "energyRelease": { "value": 3.5, "unit": "MJ/kg" },
+      "tntEquivalentFactor": 1.0,
+      "description": "Vehicle-Borne IED — typical 200-500 kg TNT equiv."
+    }
+  ]
+}

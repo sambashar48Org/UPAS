@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/* ─── UPAS Design Tokens ──────────────────────────────────────────── */
+:root {
+  /* Color palette — engineering/professional theme */
+  --upas-primary: #1e3a5f;
+  --upas-primary-light: #2d5a8e;
+  --upas-accent: #f59e0b;
+  --upas-accent-hover: #d97706;
+  --upas-success: #10b981;
+  --upas-danger: #ef4444;
+  --upas-warning: #f59e0b;
+
+  --upas-bg-primary: #f8fafc;
+  --upas-bg-secondary: #e2e8f0;
+  --upas-bg-card: #ffffff;
+  --upas-text-primary: #1e293b;
+  --upas-text-secondary: #64748b;
+  --upas-border: #cbd5e1;
+
+  /* Scene colors */
+  --upas-soil-color: #c2956b;
+  --upas-structure-color: #6b7280;
+  --upas-threat-color: #ef4444;
+  --upas-grid-color: #94a3b8;
+
+  /* Layout */
+  --upas-sidebar-width: 280px;
+  --upas-header-height: 56px;
+
+  font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif;
+}
+
+/* ─── Dark mode support (future) ──────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --upas-bg-primary: #0f172a;
+    --upas-bg-secondary: #1e293b;
+    --upas-bg-card: #1e293b;
+    --upas-text-primary: #f1f5f9;
+    --upas-text-secondary: #94a3b8;
+    --upas-border: #334155;
+  }
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  direction: rtl;
+  font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif;
+  background: var(--upas-bg-primary);
+  color: var(--upas-text-primary);
+}
+
+/* ─── Tailwind RTL Utilities ──────────────────────────────────────── */
+/* These complement Tailwind's built-in RTL support */
