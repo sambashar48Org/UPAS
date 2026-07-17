@@ -115,3 +115,27 @@ Stage Summary:
 - Git push: 8646b8c → main
 - Files created: reinforcement-design.ts, structural-design.ts, structural-design.test.ts
 - Files NOT created: design-verification.ts, burial-optimization.ts (per spec)
+---
+Task ID: 2
+Agent: main
+Task: Phase 4C — Verification & Integration
+
+Work Log:
+- Added VerificationMode, ElementVerificationResult, VerificationResult types to types.ts
+- Updated DesignResult to include verification: VerificationResult field
+- Created design-verification.ts with: verifyElementFlexure, verifyElementShear, verifyElementPenetration, verifyElementDeflection, verifyElement, runVerification, assembleDesignResult, getMinSafetyFactor
+- Created burial-optimization.ts with: computeSoilAttenuationFactor, optimizeBurialDepth
+- Created design/index.ts with: runDesignCalculation (main pipeline entry point)
+- Created design-verification.test.ts with 24 tests (15+ required)
+- Fixed design-foundation.test.ts to include verification field in mock DesignResult
+- Final PASS/FAIL: PASS = Flexure PASS AND Shear PASS AND Penetration PASS AND Deflection PASS
+- Penetration SF = h / max(h_perf, h_scab); Infinity when no threat
+- Burial optimization uses existing soil attenuation formula from constants (no new model)
+
+Stage Summary:
+- Gate 1: vitest run → 298/298 PASS (24 new tests)
+- Gate 2: tsc --noEmit → 0 errors (zero design errors; 16 pre-existing UI errors unchanged)
+- Gate 3: build → 16 errors (all pre-existing UI: PropertiesPanel, ObjectTree, CameraController, ThreatObject3D)
+- Files created: design-verification.ts, burial-optimization.ts, design/index.ts, design-verification.test.ts
+- Files modified: types.ts (additive), design-foundation.test.ts (additive)
+- Forbidden files NOT modified: results/index.ts, structure/, soil/, threat/

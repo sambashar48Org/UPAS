@@ -343,6 +343,78 @@ export interface ElementDesignResult {
   warnings: string[];
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// VERIFICATION TYPES — Phase 4C
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Verification mode identifiers */
+export type VerificationMode = 'flexure' | 'shear' | 'penetration' | 'deflection' | 'none';
+
+/** Per-element verification result — checks flexure, shear, penetration, deflection. */
+export interface ElementVerificationResult {
+  /** Which structural element */
+  element: 'roof' | 'wall' | 'floor';
+
+  // ─── Flexure ───
+  /** Flexural safety factor SF = φMn / Mu */
+  flexuralSF: number;
+  /** Flexural check: SF >= targetSafetyFactor */
+  flexuralPass: boolean;
+
+  // ─── Shear ───
+  /** Shear safety factor SF = φVn / Vu */
+  shearSF: number;
+  /** Shear check: SF >= targetSafetyFactor */
+  shearPass: boolean;
+
+  // ─── Penetration ───
+  /** Penetration safety factor SF = h / max(h_perf, h_scab).
+   *  Infinity when no penetration threat (both thicknesses = 0). */
+  penetrationSF: number;
+  /** Penetration check: SF >= 1.0 */
+  penetrationPass: boolean;
+
+  // ─── Deflection ───
+  /** Actual deflection ratio δ/L */
+  deflectionRatio: number;
+  /** Deflection check: δ/L <= maxDeflectionRatio */
+  deflectionPass: boolean;
+
+  // ─── Overall ───
+  /** Element passes ALL checks */
+  overallPass: boolean;
+  /** Governing (weakest) failure mode for this element */
+  governingMode: VerificationMode;
+  /** Verification warnings for this element */
+  warnings: string[];
+}
+
+/** Complete verification result for all elements.
+ *  The final PASS/FAIL decision:
+ *    PASS = Flexure PASS AND Shear PASS AND Penetration PASS AND Deflection PASS
+ *  for ALL elements.
+ */
+export interface VerificationResult {
+  /** Per-element verification */
+  elements: {
+    roof: ElementVerificationResult;
+    wall: ElementVerificationResult;
+    floor: ElementVerificationResult;
+  };
+
+  /** Overall: ALL elements pass ALL checks */
+  overallPass: boolean;
+
+  /** Governing (weakest) element across all modes */
+  governingElement: 'roof' | 'wall' | 'floor';
+
+  /** Governing failure mode across all elements */
+  governingMode: VerificationMode;
+
+  /** Verification warnings */
+  warnings: string[];
+}
+
 /** Complete design result for all structural elements.
  *  This is the output of the structural design engine.
  */
@@ -363,6 +435,10 @@ export interface DesignResult {
 
   /** Design recommendations (Arabic) */
   recommendations: string[];
+
+  /** Verification result — penetration + deflection + combined PASS/FAIL.
+   *  Populated by design-verification.ts (Phase 4C). */
+  verification: VerificationResult;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

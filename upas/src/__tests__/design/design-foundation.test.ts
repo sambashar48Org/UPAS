@@ -26,6 +26,7 @@ import type {
   ElementDesignResult,
   DesignResult,
   DesignInput,
+  VerificationResult,
 } from '../../calculations/design/types';
 
 import type { MaterialInput } from '../../calculations/types';
@@ -283,6 +284,17 @@ describe('Phase 4A — DesignResult types compilation', () => {
       governingElement: 'roof',
       warnings: [],
       recommendations: [],
+      verification: {
+        elements: {
+          roof: { element: 'roof', flexuralSF: 1.65, flexuralPass: true, shearSF: 1.31, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0014, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+          wall: { element: 'wall', flexuralSF: 1.85, flexuralPass: true, shearSF: 1.56, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0006, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+          floor: { element: 'floor', flexuralSF: 2.10, flexuralPass: true, shearSF: 2.08, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0003, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+        },
+        overallPass: true,
+        governingElement: 'roof',
+        governingMode: 'none',
+        warnings: [],
+      } as VerificationResult,
     };
     expect(designResult.designStatus).toBe('PASS');
     expect(designResult.governingElement).toBe('roof');
