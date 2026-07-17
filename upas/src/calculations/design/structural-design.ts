@@ -75,6 +75,7 @@ import type {
   DesignElementLoad,
   DesignCriteria,
   DesignBlastInput,
+  DesignPenetrationData,
   ElementDesignResult,
 } from './types';
 
@@ -625,8 +626,12 @@ export function calculateDeflection(
  *   5. Select reinforcement bars
  *   6. Compute capacity φMn (using DIF-modified fy) and φVc (using DIF-modified f'c)
  *   7. Check safety factors against targetSafetyFactor
- *   8. If not met: increase thickness by thicknessIncrement, goto 2
- *   9. Max 100 iterations; if maxThickness exceeded → status = 'fail'
+ *   8. Check penetration: h >= max(perforationThickness, scabbingThickness)
+ *   9. If not met: increase thickness by thicknessIncrement, goto 2
+ *  10. Max 100 iterations; if maxThickness exceeded → status = 'fail'
+ *
+ * Thickness convergence requires ALL three criteria:
+ *   h_required = max(flexural required h, shear required h, penetration required h)
  *
  * This function does NOT mutate any input parameters.
  *
@@ -634,6 +639,8 @@ export function calculateDeflection(
  * @param elementLoad - Per-element load data (from DesignInput.elements)
  * @param blast       - Complete blast threat data (from DesignInput.blast)
  * @param criteria    - Design criteria (from DesignInput.criteria)
+ * @param penetration - Penetration data from analysis (optional; if omitted, penetration
+ *                       check is skipped — used for backward compatibility and unit tests)
  * @returns Complete ElementDesignResult
  */
 export function designElement(
@@ -641,6 +648,7 @@ export function designElement(
   elementLoad: DesignElementLoad,
   blast: DesignBlastInput,
   criteria: DesignCriteria,
+  penetration?: DesignPenetrationData,
 ): ElementDesignResult {
   const warnings: string[] = [];
   const MAX_ITERATIONS = 100;
@@ -731,14 +739,39 @@ export function designElement(
     const allowableDeflection = criteria.maxDeflectionRatio * elementLoad.span * 1000; // mm
 
     // ── 11. Status determination ───────────────────────────────
+    // Three failure modes must all be satisfied:
+    //   (a) Flexural SF >= target
+    //   (b) Shear SF >= target
+    //   (c) Penetration: h >= max(perforationThickness, scabbingThickness)
+    //
+    // h_required = max(flexural h, shear h, penetration h)
+    const structuralPass =
+      flexuralSF >= criteria.targetSafetyFactor &&
+      shearSF >= criteria.targetSafetyFactor;
+
+    // Penetration check (from NDRC/TM 5-855-1 — values come from analysis engine)
+    const penetrationRequired = penetration
+      ? Math.max(penetration.perforationThickness, penetration.scabbingThickness)
+      : 0;
+    const penetrationPass =
+      penetrationRequired <= 0 ||  // no penetration threat → always pass
+      currentThickness >= penetrationRequired;
+
     let status: 'pass' | 'fail' | 'optimize';
-    if (flexuralSF >= criteria.targetSafetyFactor && shearSF >= criteria.targetSafetyFactor) {
+    if (structuralPass && penetrationPass) {
       status = 'pass';
     } else if (currentThickness >= criteria.maxThickness) {
       status = 'fail';
-      warnings.push(
-        `السماكة القصوى (${criteria.maxThickness} m) تم بلوغها دون تحقيق عامل الأمان المطلوب (${criteria.targetSafetyFactor})`,
-      );
+      if (!structuralPass) {
+        warnings.push(
+          `السماكة القصوى (${criteria.maxThickness} m) تم بلوغها دون تحقيق عامل الأمان المطلوب (${criteria.targetSafetyFactor})`,
+        );
+      }
+      if (!penetrationPass) {
+        warnings.push(
+          `السماكة القصوى (${criteria.maxThickness} m) تم بلوغها دون تلبية متطلبات مقاومة الاختراق (${penetrationRequired.toFixed(3)} m)`,
+        );
+      }
     } else {
       status = 'optimize';
     }
@@ -792,11 +825,11 @@ export function runStructuralDesign(designInput: DesignInput): {
   wall: ElementDesignResult;
   floor: ElementDesignResult;
 } {
-  const { elements, blast, criteria } = designInput;
+  const { elements, blast, criteria, penetration } = designInput;
 
   return {
-    roof: designElement('roof', elements.roof, blast, criteria),
-    wall: designElement('wall', elements.wall, blast, criteria),
-    floor: designElement('floor', elements.floor, blast, criteria),
+    roof: designElement('roof', elements.roof, blast, criteria, penetration.roof),
+    wall: designElement('wall', elements.wall, blast, criteria, penetration.wall),
+    floor: designElement('floor', elements.floor, blast, criteria, penetration.floor),
   };
 }
