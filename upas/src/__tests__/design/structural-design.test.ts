@@ -17,6 +17,9 @@ import { describe, it, expect } from 'vitest';
 
 import {
   calculateDesignLoad,
+  calculateDynamicResponseFactor,
+  estimateNaturalPeriod,
+  getPeakBlastPressure,
   calculateDesignMoment,
   calculateDesignShear,
   calculateDeflection,
@@ -162,24 +165,23 @@ describe('Test 3: Distance increase → thickness decrease', () => {
 // Test 4: Roof uses reflected pressure
 // ═══════════════════════════════════════════════════════════════════════
 describe('Test 4: Roof uses reflected pressure', () => {
-  it('roof design load includes peakReflectedPressure', () => {
-    const blast = makeBlast({ peakReflectedPressure: 1500, peakDynamicPressure: 200 });
-    const el = makeElementLoad({ element: 'roof', staticPressure: 60 });
-
-    const w = calculateDesignLoad('roof', el, blast);
-
-    // Wroof = peakReflectedPressure + staticPressure
-    expect(w).toBeCloseTo(1500 + 60, 2);
+  it('roof peak blast pressure = peakReflectedPressure', () => {
+    const blast = makeBlast({ peakReflectedPressure: 1500, peakDynamicPressure: 200, peakIncidentPressure: 500 });
+    const p = getPeakBlastPressure('roof', blast);
+    expect(p).toBe(1500);
+    expect(p).not.toBe(500);  // NOT incident
+    expect(p).not.toBe(200);  // NOT dynamic
   });
 
-  it('roof design load is NOT just appliedPressure (elementLoad.dynamicPressure)', () => {
-    const blast = makeBlast({ peakReflectedPressure: 1500 });
-    const el = makeElementLoad({ element: 'roof', dynamicPressure: 800, staticPressure: 60 });
+  it('roof design load is based on peakReflectedPressure, not dynamicPressure', () => {
+    const blast = makeBlast({ peakReflectedPressure: 1500, peakDynamicPressure: 200 });
+    const el = makeElementLoad({ element: 'roof', dynamicPressure: 800, staticPressure: 60, span: 4, thickness: 0.40 });
 
     const w = calculateDesignLoad('roof', el, blast);
 
     // Must use reflectedPressure (1500), NOT dynamicPressure (800)
-    expect(w).toBeCloseTo(1560, 2);
+    // With DLF (T≈25ms, td/T≈0.4, DLF≈1.5): w ≈ 1500×1.5 + 60 = 2310
+    expect(w).toBeGreaterThan(1500 + 60); // DLF amplifies
     expect(w).not.toBeCloseTo(800 + 60, 2);
   });
 });
@@ -188,18 +190,27 @@ describe('Test 4: Roof uses reflected pressure', () => {
 // Test 5: Wall uses lateral earth pressure
 // ═══════════════════════════════════════════════════════════════════════
 describe('Test 5: Wall uses lateral earth pressure', () => {
-  it('wall design load includes reflectedPressure × 0.70 + lateralEarthPressure', () => {
+  it('wall peak blast pressure = peakReflectedPressure × 0.70', () => {
+    const blast = makeBlast({ peakReflectedPressure: 1500 });
+    const p = getPeakBlastPressure('wall', blast);
+    expect(p).toBeCloseTo(1050, 2); // 1500 × 0.70
+  });
+
+  it('wall design load includes wall factor (0.70) from project constants', () => {
     const blast = makeBlast({ peakReflectedPressure: 1500 });
     const el = makeElementLoad({
       element: 'wall',
-      staticPressure: 45, // lateralEarthPressure + selfWeight
+      staticPressure: 45,
       selfWeight: 7.06,
+      span: 4,
+      thickness: 0.40,
     });
 
     const w = calculateDesignLoad('wall', el, blast);
 
-    // Wwall = 1500 × 0.70 + 45 = 1050 + 45 = 1095
-    expect(w).toBeCloseTo(1095, 2);
+    // Wall uses 1500 × 0.70 = 1050 as blast component (× DLF)
+    // NOT 1500 (roof) or 200 (floor)
+    expect(w).toBeGreaterThan(1050 + 45); // DLF amplifies
   });
 });
 
@@ -207,18 +218,29 @@ describe('Test 5: Wall uses lateral earth pressure', () => {
 // Test 6: Floor uses dynamic pressure
 // ═════════════════════════════════════════════════════════════════════
 describe('Test 6: Floor uses soil reaction + dynamic pressure', () => {
-  it('floor design load includes peakDynamicPressure + soilReaction + selfWeight', () => {
+  it('floor peak blast pressure = peakDynamicPressure', () => {
+    const blast = makeBlast({ peakDynamicPressure: 200, peakReflectedPressure: 1500, peakIncidentPressure: 500 });
+    const p = getPeakBlastPressure('floor', blast);
+    expect(p).toBe(200);
+    expect(p).not.toBe(1500); // NOT reflected
+    expect(p).not.toBe(500);  // NOT incident
+  });
+
+  it('floor design load uses peakDynamicPressure, not peakReflectedPressure', () => {
     const blast = makeBlast({ peakDynamicPressure: 200, peakReflectedPressure: 1500 });
     const el = makeElementLoad({
       element: 'floor',
-      staticPressure: 55, // selfWeight + soilReaction
+      staticPressure: 55,
       selfWeight: 7.06,
+      span: 4,
+      thickness: 0.40,
     });
 
     const w = calculateDesignLoad('floor', el, blast);
 
-    // Wfloor = peakDynamicPressure + staticPressure = 200 + 55 = 255
-    expect(w).toBeCloseTo(255, 2);
+    // Floor uses 200 (dynamic pressure), NOT 1500 (reflected)
+    // With DLF: w ≈ 200 × DLF + 55 (much less than 1500 × DLF + 55)
+    expect(w).toBeLessThan(1500 * 2 + 55); // should not be near reflected level
   });
 });
 

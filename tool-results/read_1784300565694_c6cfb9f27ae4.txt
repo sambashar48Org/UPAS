@@ -1,0 +1,759 @@
+     1→     1→/**
+     2→     2→ * Phase 0 Tests: Design Input Adapter + Soil Pressure
+     3→     3→ *
+     4→     4→ * Tests that verify:
+     5→     5→ * 1. Every data gap (G1–G7) is properly resolved
+     6→     6→ * 2. Per-element load mapping is correct
+     7→     7→ * 3. Lateral earth pressure calculations follow Rankine theory
+     8→     8→ * 4. Default criteria are applied correctly
+     9→     9→ * 5. Missing data produces appropriate warnings
+    10→    10→ * 6. Existing 165 tests are NOT affected (no modifications to existing files)
+    11→    11→ *
+    12→    12→ * All tests use toBeCloseTo() for numerical assertions.
+    13→    13→ */
+    14→    14→
+    15→    15→import { describe, it, expect } from 'vitest';
+    16→    16→import {
+    17→    17→  calculateActiveEarthPressureCoeff,
+    18→    18→  calculateAtRestEarthPressureCoeff,
+    19→    19→  calculateLateralEarthPressure,
+    20→    20→  calculateAverageWallLateralPressure,
+    21→    21→} from '../../calculations/design/soil-pressure';
+    22→    22→
+    23→    23→import { buildDesignInput } from '../../calculations/design/design-input-adapter';
+    24→    24→import { DEFAULT_DESIGN_CRITERIA, REBAR_DATABASE, GRAVITY, ACI_STRENGTH_REDUCTION_FACTORS, calculateSteelDIF } from '../../calculations/constants';
+    25→    25→
+    26→    26→import type { FullAnalysisResult } from '../../calculations/types';
+    27→    27→import type { DesignCriteria } from '../../calculations/design/types';
+    28→    28→
+    29→    29→// ═══════════════════════════════════════════════════════════════════════
+    30→    30→// TEST HELPERS — Build minimal FullAnalysisResult for testing
+    31→    31→// ═══════════════════════════════════════════════════════════════════════
+    32→    32→
+    33→    33→function makeMinimalAnalysisResult(overrides?: Partial<FullAnalysisResult>): FullAnalysisResult {
+    34→    34→  const defaultMaterial = {
+    35→    35→    materialRef: 'rc_350',
+    36→    36→    name: 'RC 350',
+    37→    37→    category: 'concrete' as const,
+    38→    38→    compressiveStrength: 35,
+    39→    39→    tensileStrength: 3.3,
+    40→    40→    modulusOfElasticity: 28, // GPa
+    41→    41→    density: 2400,
+    42→    42→    poissonRatio: 0.2,
+    43→    43→    yieldStrength: null,
+    44→    44→    difCompressive: 1.19,
+    45→    45→    difTensile: 1.0,
+    46→    46→  };
+    47→    47→
+    48→    48→  return {
+    49→    49→    id: 'test-001',
+    50→    50→    projectId: 'proj-001',
+    51→    51→    calculatedAt: '2026-07-17T00:00:00Z',
+    52→    52→    analysisType: 'combined',
+    53→    53→
+    54→    54→    input: {
+    55→    55→      projectId: 'proj-001',
+    56→    56→      groundLevel: 0,
+    57→    57→      soil: {
+    58→    58→        layers: [
+    59→    59→          {
+    60→    60→            name: 'Medium Sand',
+    61→    61→            soilTypeRef: 'sand_medium',
+    62→    62→            thickness: 6,
+    63→    63→            topElevation: 0,
+    64→    64→            unitWeight: 18,
+    65→    65→            frictionAngle: 33,
+    66→    66→            cohesion: 0,
+    67→    67→            modulusOfElasticity: 40,
+    68→    68→            poissonRatio: 0.28,
+    69→    69→            waveVelocity: 300,
+    70→    70→            category: 'cohesiveless',
+    71→    71→            relativeDensity: 0.5,
+    72→    72→            SPT_NValue: 15,
+    73→    73→            dampingRatio: 0.20,
+    74→    74→            groundShockCoefficients: {
+    75→    75→              legacy: { K: 500, n: 1.5 },
+    76→    76→              enhanced: { K: 520, n: 1.5 },
+    77→    77→            },
+    78→    78→          },
+    79→    79→        ],
+    80→    80→        waterTableDepth: null,
+    81→    81→        totalDepth: 6,
+    82→    82→      },
+    83→    83→      structure: {
+    84→    84→        type: 'box',
+    85→    85→        position: { x: 0, y: -4.5, z: 0 },
+    86→    86→        length: 8,
+    87→    87→        width: 5,
+    88→    88→        height: 3,
+    89→    89→        wallThickness: 0.35,
+    90→    90→        roofThickness: 0.40,
+    91→    91→        floorThickness: 0.35,
+    92→    92→        wallMaterial: { ...defaultMaterial },
+    93→    93→        roofMaterial: { ...defaultMaterial },
+    94→    94→        floorMaterial: { ...defaultMaterial },
+    95→    95→        burialDepth: 3,
+    96→    96→        shapeParams: {
+    97→    97→          archRadius: null,
+    98→    98→          archAngle: null,
+    99→    99→          cylinderRadius: null,
+   100→   100→          domeRadius: null,
+   101→   101→          domeHeight: null,
+   102→   102→        },
+   103→   103→        hasEntry: false,
+   104→   104→        entryWidth: null,
+   105→   105→        entryHeight: null,
+   106→   106→      },
+   107→   107→      threat: {
+   108→   108→        type: 'underground',
+   109→   109→        position: { x: 0, y: 0, z: 0 },
+   110→   110→        detonationType: 'buried',
+   111→   111→        standoffDistance: 10,
+   112→   112→        explosive: {
+   113→   113→          explosiveTypeRef: 'TNT',
+   114→   114→          name: 'TNT',
+   115→   115→          chargeMass: 100,
+   116→   116→          chargeShape: 'spherical',
+   117→   117→          chargeLength: null,
+   118→   118→          chargeDiameter: null,
+   119→   119→          tntEquivalentFactor: 1.0,
+   120→   120→          detonationVelocity: 6930,
+   121→   121→          energyRelease: 4.184,
+   122→   122→          density: 1600,
+   123→   123→        },
+   124→   124→        burialDepth: 0.5,
+   125→   125→        detonationHeight: null,
+   126→   126→      },
+   127→   127→      settings: {
+   128→   128→        analysisType: 'combined',
+   129→   129→        outputUnits: 'metric',
+   130→   130→        includeSSI: true,
+   131→   131→        targetSafetyFactor: 1.4,
+   132→   132→        allowPlasticResponse: true,
+   133→   133→        useEnhancedSoilModel: false,
+   134→   134→      },
+   135→   135→    },
+   136→   136→
+   137→   137→    blast: {
+   138→   138→      parameters: {
+   139→   139→        tntEquivalentMass: 100,
+   140→   140→        scaledDistance: 2.154,
+   141→   141→        distance: 10,
+   142→   142→        peakIncidentPressure: 500,
+   143→   143→        peakReflectedPressure: 1500,
+   144→   144→        reflectionCoefficient: 3.0,
+   145→   145→        peakDynamicPressure: 200,
+   146→   146→        positivePhaseDuration: 10,
+   147→   147→        positivePhaseImpulse: 2500,
+   148→   148→        shockFrontVelocity: 500,
+   149→   149→        arrivalTime: 20,
+   150→   150→        shapeCorrectionFactor: 1.0,
+   151→   151→        groundReflection: 'none',
+   152→   152→        groundReflectedPressure: null,
+   153→   153→      },
+   154→   154→      soilInteraction: {
+   155→   155→        overburdenPressure: 54,    // 18 kN/m³ × 3m
+   156→   156→        effectiveStress: 54,
+   157→   157→        soilAttenuationFactor: 0.35,
+   158→   158→        pressureAtStructure: 175,  // attenuated blast pressure at structure
+   159→   159→        groundShockPPV: 0.15,
+   160→   160→        groundShockArrivalTime: 25,
+   161→   161→        averageWaveVelocity: 300,
+   162→   162→        averageUnitWeight: 18,
+   163→   163→        layerTravelTimes: null,
+   164→   164→        impedanceMismatchLosses: null,
+   165→   165→        totalImpedanceTransmission: null,
+   166→   166→        ppvDamageLevel: null,
+   167→   167→      },
+   168→   168→      roofResponse: {
+   169→   169→        element: 'roof',
+   170→   170→        appliedPressure: 175,    // 100% of pressureAtStructure
+   171→   171→        dynamicResistance: 120,
+   172→   172→        staticResistance: 100,
+   173→   173→        dif: 1.19,
+   174→   174→        safetyFactor: 0.69,
+   175→   175→        responseMode: 'failure',
+   176→   176→        maxDisplacement: 45,
+   177→   177→        supportRotation: 1.6,
+   178→   178→        ductilityRatio: 5,
+   179→   179→        naturalPeriod: 12,
+   180→   180→        responseTime: 10,
+   181→   181→      },
+   182→   182→      wallResponse: {
+   183→   183→        element: 'wall',
+   184→   184→        appliedPressure: 122.5,  // 70% of pressureAtStructure
+   185→   185→        dynamicResistance: 140,
+   186→   186→        staticResistance: 118,
+   187→   187→        dif: 1.19,
+   188→   188→        safetyFactor: 1.14,
+   189→   189→        responseMode: 'plastic',
+   190→   190→        maxDisplacement: 22,
+   191→   191→        supportRotation: 1.0,
+   192→   192→        ductilityRatio: 3,
+   193→   193→        naturalPeriod: 8,
+   194→   194→        responseTime: 8,
+   195→   195→      },
+   196→   196→      floorResponse: {
+   197→   197→        element: 'floor',
+   198→   198→        appliedPressure: 87.5,   // 50% of pressureAtStructure
+   199→   199→        dynamicResistance: 160,
+   200→   200→        staticResistance: 135,
+   201→   201→        dif: 1.19,
+   202→   202→        safetyFactor: 1.83,
+   203→   203→        responseMode: 'elastic',
+   204→   204→        maxDisplacement: 8,
+   205→   205→        supportRotation: 0.3,
+   206→   206→        ductilityRatio: 1.0,
+   207→   207→        naturalPeriod: 10,
+   208→   208→        responseTime: 10,
+   209→   209→      },
+   210→   210→    },
+   211→   211→    penetration: {
+   212→   212→      roofPenetration: {
+   213→   213→        penetrationDepthSoil: 0,
+   214→   214→        penetrationDepthStructure: 0.25,
+   215→   215→        perforationThickness: 0.325,
+   216→   216→        scabbingThickness: 0.55,
+   217→   217→        isPerforated: true,
+   218→   218→        isSpalled: true,
+   219→   219→        craterDiameter: 0,
+   220→   220→        craterDepth: 0,
+   221→   221→        formulaUsed: 'Modified NDRC (Concrete)',
+   222→   222→      },
+   223→   223→      wallPenetration: {
+   224→   224→        penetrationDepthSoil: 0,
+   225→   225→        penetrationDepthStructure: 0.15,
+   226→   226→        perforationThickness: 0.195,
+   227→   227→        scabbingThickness: 0.33,
+   228→   228→        isPerforated: true,
+   229→   229→        isSpalled: true,
+   230→   230→        craterDiameter: 0,
+   231→   231→        craterDepth: 0,
+   232→   232→        formulaUsed: 'Modified NDRC (Concrete)',
+   233→   233→      },
+   234→   234→      floorPenetration: {
+   235→   235→        penetrationDepthSoil: 0,
+   236→   236→        penetrationDepthStructure: 0.12,
+   237→   237→        perforationThickness: 0.156,
+   238→   238→        scabbingThickness: 0.264,
+   239→   239→        isPerforated: false,
+   240→   240→        isSpalled: true,
+   241→   241→        craterDiameter: 0,
+   242→   242→        craterDepth: 0,
+   243→   243→        formulaUsed: 'Modified NDRC (Concrete)',
+   244→   244→      },
+   245→   245→    },
+   246→   246→    overall: {
+   247→   247→      minSafetyFactor: 0.69,
+   248→   248→      protectionLevel: 'critical',
+   249→   249→      governingElement: 'roof',
+   250→   250→      governingMode: 'blast',
+   251→   251→      isAdequate: false,
+   252→   252→    },
+   253→   253→    visualization: {
+   254→   254→      pressureContours: [],
+   255→   255→      damageZones: [],
+   256→   256→      threatPath: null,
+   257→   257→      structureStressRegions: [],
+   258→   258→    },
+   259→   259→    warnings: [],
+   260→   260→    recommendations: [],
+   261→   261→    ...overrides,
+   262→   262→  };
+   263→   263→}
+   264→   264→
+   265→   265→// ═══════════════════════════════════════════════════════════════════════
+   266→   266→// SOIL PRESSURE TESTS
+   267→   267→// ═══════════════════════════════════════════════════════════════════════
+   268→   268→
+   269→   269→describe('Soil Pressure Calculations', () => {
+   270→   270→  describe('Active Earth Pressure Coefficient Ka', () => {
+   271→   271→    it('should return 1.0 for φ = 0 (purely cohesive)', () => {
+   272→   272→      expect(calculateActiveEarthPressureCoeff(0)).toBeCloseTo(1.0, 5);
+   273→   273→    });
+   274→   274→
+   275→   275→    it('should return 0.333 for φ = 30° (classic sand)', () => {
+   276→   276→      // Ka = (1 - sin30)/(1 + sin30) = (1-0.5)/(1+0.5) = 0.5/1.5 = 0.333
+   277→   277→      expect(calculateActiveEarthPressureCoeff(30)).toBeCloseTo(0.3333, 3);
+   278→   278→    });
+   279→   279→
+   280→   280→    it('should return 0.217 for φ = 40° (dense sand)', () => {
+   281→   281→      // Ka = (1 - sin40)/(1 + sin40) = (1-0.6428)/(1+0.6428) = 0.3572/1.6428 = 0.2174
+   282→   282→      expect(calculateActiveEarthPressureCoeff(40)).toBeCloseTo(0.217, 3);
+   283→   283→    });
+   284→   284→
+   285→   285→    it('should return ~0.271 for φ = 33° (medium sand)', () => {
+   286→   286→      // Ka = (1 - sin33)/(1 + sin33) = (1-0.5446)/(1+0.5446) = 0.4554/1.5446 = 0.2948
+   287→   287→      expect(calculateActiveEarthPressureCoeff(33)).toBeCloseTo(0.295, 2);
+   288→   288→    });
+   289→   289→
+   290→   290→    it('should decrease as friction angle increases', () => {
+   291→   291→      const ka20 = calculateActiveEarthPressureCoeff(20);
+   292→   292→      const ka40 = calculateActiveEarthPressureCoeff(40);
+   293→   293→      expect(ka40).toBeLessThan(ka20);
+   294→   294→    });
+   295→   295→  });
+   296→   296→
+   297→   297→  describe('At-Rest Earth Pressure Coefficient Ko', () => {
+   298→   298→    it('should return 1.0 for φ = 0', () => {
+   299→   299→      expect(calculateAtRestEarthPressureCoeff(0)).toBeCloseTo(1.0, 5);
+   300→   300→    });
+   301→   301→
+   302→   302→    it('should return 0.5 for φ = 30° (Jaky: Ko = 1 - sin30 = 0.5)', () => {
+   303→   303→      expect(calculateAtRestEarthPressureCoeff(30)).toBeCloseTo(0.5, 5);
+   304→   304→    });
+   305→   305→
+   306→   306→    it('should always be >= Ka for same angle', () => {
+   307→   307→      const angles = [15, 25, 33, 40, 45];
+   308→   308→      for (const phi of angles) {
+   309→   309→        const ko = calculateAtRestEarthPressureCoeff(phi);
+   310→   310→        const ka = calculateActiveEarthPressureCoeff(phi);
+   311→   311→        expect(ko).toBeGreaterThanOrEqual(ka);
+   312→   312→      }
+   313→   313→    });
+   314→   314→  });
+   315→   315→
+   316→   316→  describe('Lateral Earth Pressure', () => {
+   317→   317→    it('should return 0 for zero vertical stress', () => {
+   318→   318→      expect(calculateLateralEarthPressure(0, 33, 0, 'active')).toBeCloseTo(0, 5);
+   319→   319→    });
+   320→   320→
+   321→   321→    it('should calculate active pressure correctly for cohesionless soil', () => {
+   322→   322→      // σv = 18 × 3 = 54 kPa, φ = 33°, c = 0
+   323→   323→      // Ka ≈ 0.295, σh = 0.295 × 54 = 15.9 kPa
+   324→   324→      const pressure = calculateLateralEarthPressure(54, 33, 0, 'active');
+   325→   325→      expect(pressure).toBeCloseTo(15.93, 1);
+   326→   326→    });
+   327→   327→
+   328→   328→    it('should reduce pressure for cohesive soil', () => {
+   329→   329→      // Same σv and φ, but with c = 25 kPa
+   330→   330→      // σh = Ka × σv - 2c√Ka = 0.295×54 - 2×25×√0.295 = 15.93 - 27.14 = -11.2 → 0 (clamped)
+   331→   331→      const pressure = calculateLateralEarthPressure(54, 33, 25, 'active');
+   332→   332→      expect(pressure).toBeCloseTo(0, 1);
+   333→   333→    });
+   334→   334→
+   335→   335→    it('should use at-rest coefficient when requested', () => {
+   336→   336→      // Ko = 1 - sin33 = 1 - 0.5446 = 0.4554
+   337→   337→      // σh = 0.4554 × 54 = 24.59 kPa
+   338→   338→      const pressure = calculateLateralEarthPressure(54, 33, 0, 'at_rest');
+   339→   339→      expect(pressure).toBeCloseTo(24.59, 1);
+   340→   340→    });
+   341→   341→  });
+   342→   342→
+   343→   343→  describe('Average Wall Lateral Pressure', () => {
+   344→   344→    it('should calculate average pressure across wall height', () => {
+   345→   345→      // burialDepth = 3m, wallHeight = 3m, γ = 18 kN/m³, φ = 33°, c = 0
+   346→   346→      // σv_top = 18 × 3 = 54 kPa
+   347→   347→      // σv_bottom = 18 × 6 = 108 kPa
+   348→   348→      // Ka ≈ 0.295
+   349→   349→      // lateral_top = 0.295 × 54 = 15.93
+   350→   350→      // lateral_bottom = 0.295 × 108 = 31.86
+   351→   351→      // average = (15.93 + 31.86) / 2 = 23.9 kPa
+   352→   352→      const avg = calculateAverageWallLateralPressure(3, 3, 18, 33, 0, 'active');
+   353→   353→      expect(avg).toBeCloseTo(23.9, 0);
+   354→   354→    });
+   355→   355→  });
+   356→   356→});
+   357→   357→
+   358→   358→// ═══════════════════════════════════════════════════════════════════════
+   359→   359→// DESIGN INPUT ADAPTER TESTS
+   360→   360→// ═══════════════════════════════════════════════════════════════════════
+   361→   361→
+   362→   362→describe('Design Input Adapter', () => {
+   363→   363→  const baseResult = makeMinimalAnalysisResult();
+   364→   364→
+   365→   365→  describe('Roof Load Mapping', () => {
+   366→   366→    it('should map dynamic pressure from roofResponse', () => {
+   367→   367→      const { input } = buildDesignInput(baseResult);
+   368→   368→      expect(input.elements.roof.dynamicPressure).toBeCloseTo(175, 1);
+   369→   369→    });
+   370→   370→
+   371→   371→    it('should include overburden in roof static pressure', () => {
+   372→   372→      const { input } = buildDesignInput(baseResult);
+   373→   373→      // overburden = 54 kPa + selfWeight
+   374→   374→      expect(input.elements.roof.staticPressure).toBeGreaterThan(54);
+   375→   375→    });
+   376→   376→
+   377→   377→    it('should exclude overburden when disabled in criteria', () => {
+   378→   378→      const { input } = buildDesignInput(baseResult, { includeOverburden: false });
+   379→   379→      // Only self-weight
+   380→   380→      const selfWeight = (2400 * 0.40 * GRAVITY) / 1000;
+   381→   381→      expect(input.elements.roof.staticPressure).toBeCloseTo(selfWeight, 1);
+   382→   382→    });
+   383→   383→  });
+   384→   384→
+   385→   385→  describe('Wall Load Mapping', () => {
+   386→   386→    it('should map dynamic pressure from wallResponse', () => {
+   387→   387→      const { input } = buildDesignInput(baseResult);
+   388→   388→      expect(input.elements.wall.dynamicPressure).toBeCloseTo(122.5, 1);
+   389→   389→    });
+   390→   390→
+   391→   391→    it('should include lateral earth pressure in wall static pressure', () => {
+   392→   392→      const { input } = buildDesignInput(baseResult);
+   393→   393→      // Wall static = lateralPressure + selfWeight
+   394→   394→      const lateralPressure = calculateAverageWallLateralPressure(3, 3, 18, 33, 0, 'active');
+   395→   395→      expect(input.elements.wall.staticPressure).toBeGreaterThan(lateralPressure);
+   396→   396→    });
+   397→   397→
+   398→   398→    it('should exclude lateral pressure when disabled', () => {
+   399→   399→      const { input } = buildDesignInput(baseResult, { includeLateralPressure: false });
+   400→   400→      // Only self-weight
+   401→   401→      const selfWeight = (2400 * 0.35 * GRAVITY) / 1000;
+   402→   402→      expect(input.elements.wall.staticPressure).toBeCloseTo(selfWeight, 1);
+   403→   403→    });
+   404→   404→
+   405→   405→    it('should use wall-specific support condition (default: fixed)', () => {
+   406→   406→      const { input } = buildDesignInput(baseResult);
+   407→   407→      expect(input.elements.wall.supportCondition).toBe('fixed');
+   408→   408→    });
+   409→   409→
+   410→   410→    it('should use overridden wall support condition', () => {
+   411→   411→      const { input } = buildDesignInput(baseResult, { wallSupportCondition: 'simply_supported' });
+   412→   412→      expect(input.elements.wall.supportCondition).toBe('simply_supported');
+   413→   413→    });
+   414→   414→
+   415→   415→    it('should use min(length, height) as wall span', () => {
+   416→   416→      const { input } = buildDesignInput(baseResult);
+   417→   417→      // length=8, height=3, so span = 3
+   418→   418→      expect(input.elements.wall.span).toBeCloseTo(3, 1);
+   419→   419→    });
+   420→   420→  });
+   421→   421→
+   422→   422→  describe('Floor Load Mapping', () => {
+   423→   423→    it('should map dynamic pressure from floorResponse', () => {
+   424→   424→      const { input } = buildDesignInput(baseResult);
+   425→   425→      expect(input.elements.floor.dynamicPressure).toBeCloseTo(87.5, 1);
+   426→   426→    });
+   427→   427→
+   428→   428→    it('should include effective stress (soil reaction) in floor static', () => {
+   429→   429→      const { input } = buildDesignInput(baseResult);
+   430→   430→      // Floor static = selfWeight + effectiveStress
+   431→   431→      const selfWeight = (2400 * 0.35 * GRAVITY) / 1000;
+   432→   432→      expect(input.elements.floor.staticPressure).toBeGreaterThan(selfWeight + 50);
+   433→   433→    });
+   434→   434→  });
+   435→   435→
+   436→   436→  describe('Impulse Distribution (G4)', () => {
+   437→   437→    it('should distribute impulse per-element: roof=100%, wall=70%, floor=50%', () => {
+   438→   438→      const { input } = buildDesignInput(baseResult);
+   439→   439→      // Global impulse = 2500 kPa·ms
+   440→   440→      expect(input.elements.roof.dynamicImpulse).toBeCloseTo(2500, 1);    // 100%
+   441→   441→      expect(input.elements.wall.dynamicImpulse).toBeCloseTo(1750, 1);   // 70%
+   442→   442→      expect(input.elements.floor.dynamicImpulse).toBeCloseTo(1250, 1);  // 50%
+   443→   443→    });
+   444→   444→  });
+   445→   445→
+   446→   446→  describe('Self-Weight Calculation (G6)', () => {
+   447→   447→    it('should calculate self-weight correctly for each element', () => {
+   448→   448→      const { input } = buildDesignInput(baseResult);
+   449→   449→
+   450→   450→      // Roof: 2400 × 0.40 × 9.80665 / 1000
+   451→   451→      const roofSelfWeight = (2400 * 0.40 * GRAVITY) / 1000;
+   452→   452→      expect(input.elements.roof.selfWeight).toBeCloseTo(roofSelfWeight, 2);
+   453→   453→
+   454→   454→      // Wall: 2400 × 0.35 × 9.80665 / 1000
+   455→   455→      const wallSelfWeight = (2400 * 0.35 * GRAVITY) / 1000;
+   456→   456→      expect(input.elements.wall.selfWeight).toBeCloseTo(wallSelfWeight, 2);
+   457→   457→
+   458→   458→      // Floor: 2400 × 0.35 × 9.80665 / 1000
+   459→   459→      const floorSelfWeight = (2400 * 0.35 * GRAVITY) / 1000;
+   460→   460→      expect(input.elements.floor.selfWeight).toBeCloseTo(floorSelfWeight, 2);
+   461→   461→    });
+   462→   462→
+   463→   463→    it('should be zero when includeSelfWeight is false', () => {
+   464→   464→      const { input } = buildDesignInput(baseResult, { includeSelfWeight: false });
+   465→   465→      expect(input.elements.roof.selfWeight).toBeCloseTo(0, 5);
+   466→   466→      expect(input.elements.wall.selfWeight).toBeCloseTo(0, 5);
+   467→   467→      expect(input.elements.floor.selfWeight).toBeCloseTo(0, 5);
+   468→   468→    });
+   469→   469→  });
+   470→   470→
+   471→   471→  describe('Support Condition Defaults (G3)', () => {
+   472→   472→    it('should default roof to simply_supported', () => {
+   473→   473→      const { input } = buildDesignInput(baseResult);
+   474→   474→      expect(input.elements.roof.supportCondition).toBe('simply_supported');
+   475→   475→    });
+   476→   476→
+   477→   477→    it('should default floor to simply_supported', () => {
+   478→   478→      const { input } = buildDesignInput(baseResult);
+   479→   479→      expect(input.elements.floor.supportCondition).toBe('simply_supported');
+   480→   480→    });
+   481→   481→
+   482→   482→    it('should use overridden support condition for roof/floor', () => {
+   483→   483→      const { input } = buildDesignInput(baseResult, { supportCondition: 'fixed' });
+   484→   484→      expect(input.elements.roof.supportCondition).toBe('fixed');
+   485→   485→      expect(input.elements.floor.supportCondition).toBe('fixed');
+   486→   486→      // Wall should still be independently controllable
+   487→   487→      expect(input.elements.wall.supportCondition).toBe('fixed'); // default wallSupportCondition
+   488→   488→    });
+   489→   489→  });
+   490→   490→
+   491→   491→  describe('Reinforcement Defaults (G1)', () => {
+   492→   492→    it('should use fy=420 from DEFAULT_DESIGN_CRITERIA', () => {
+   493→   493→      const { input } = buildDesignInput(baseResult);
+   494→   494→      expect(input.reinforcement.steelYieldStrength).toBeCloseTo(420, 0);
+   495→   495→    });
+   496→   496→
+   497→   497→    it('should use ASTM A615 Grade 60 as default standard', () => {
+   498→   498→      const { input } = buildDesignInput(baseResult);
+   499→   499→      expect(input.reinforcement.standard).toBe('ASTM A615 Grade 60');
+   500→   500→    });
+   501→   501→
+   502→   502→    it('should use custom fy when provided in criteria', () => {
+   503→   503→      const { input } = buildDesignInput(baseResult, {
+   504→   504→        reinforcementGrade: { fy: 500, standard: 'BS 4449 Grade 500C' },
+   505→   505→      });
+   506→   506→      expect(input.reinforcement.steelYieldStrength).toBeCloseTo(500, 0);
+   507→   507→      expect(input.reinforcement.standard).toBe('BS 4449 Grade 500C');
+   508→   508→    });
+   509→   509→
+   510→   510→    it('should use 50mm concrete cover for underground structures (G5)', () => {
+   511→   511→      const { input } = buildDesignInput(baseResult);
+   512→   512→      expect(input.reinforcement.concreteCover).toBeCloseTo(0.050, 4);
+   513→   513→    });
+   514→   514→
+   515→   515→    it('should use custom cover when provided', () => {
+   516→   516→      const { input } = buildDesignInput(baseResult, { concreteCover: 0.040 });
+   517→   517→      expect(input.reinforcement.concreteCover).toBeCloseTo(0.040, 4);
+   518→   518→    });
+   519→   519→  });
+   520→   520→
+   521→   521→  describe('Soil Properties in DesignInput', () => {
+   522→   522→    it('should include Ka coefficient from top layer', () => {
+   523→   523→      const { input } = buildDesignInput(baseResult);
+   524→   524→      // φ = 33° → Ka ≈ 0.295
+   525→   525→      expect(input.soil.activeEarthPressureCoeff).toBeCloseTo(0.295, 2);
+   526→   526→    });
+   527→   527→
+   528→   528→    it('should include Ko coefficient', () => {
+   529→   529→      const { input } = buildDesignInput(baseResult);
+   530→   530→      // Ko = 1 - sin33 ≈ 0.455
+   531→   531→      expect(input.soil.atRestEarthPressureCoeff).toBeCloseTo(0.455, 2);
+   532→   532→    });
+   533→   533→
+   534→   534→    it('should include overburden from SSI', () => {
+   535→   535→      const { input } = buildDesignInput(baseResult);
+   536→   536→      expect(input.soil.overburdenPressure).toBeCloseTo(54, 1);
+   537→   537→    });
+   538→   538→  });
+   539→   539→
+   540→   540→  describe('Penetration Data Mapping', () => {
+   541→   541→    it('should map roof penetration data', () => {
+   542→   542→      const { input } = buildDesignInput(baseResult);
+   543→   543→      expect(input.penetration.roof.perforationThickness).toBeCloseTo(0.325, 3);
+   544→   544→      expect(input.penetration.roof.isPerforated).toBe(true);
+   545→   545→    });
+   546→   546→
+   547→   547→    it('should map wall penetration data', () => {
+   548→   548→      const { input } = buildDesignInput(baseResult);
+   549→   549→      expect(input.penetration.wall.scabbingThickness).toBeCloseTo(0.33, 2);
+   550→   550→    });
+   551→   551→
+   552→   552→    it('should return zeros when no penetration data', () => {
+   553→   553→      const noPenResult = makeMinimalAnalysisResult({
+   554→   554→        penetration: {
+   555→   555→          roofPenetration: null,
+   556→   556→          wallPenetration: null,
+   557→   557→          floorPenetration: null,
+   558→   558→        },
+   559→   559→      });
+   560→   560→      const { input } = buildDesignInput(noPenResult);
+   561→   561→      expect(input.penetration.roof.perforationThickness).toBeCloseTo(0, 5);
+   562→   562→      expect(input.penetration.wall.isPerforated).toBe(false);
+   563→   563→    });
+   564→   564→  });
+   565→   565→
+   566→   566→  describe('Missing Data Warnings', () => {
+   567→   567→    it('should warn when no blast parameters', () => {
+   568→   568→      const noBlast = makeMinimalAnalysisResult({
+   569→   569→        blast: {
+   570→   570→          parameters: null,
+   571→   571→          soilInteraction: null,
+   572→   572→          roofResponse: null,
+   573→   573→          wallResponse: null,
+   574→   574→          floorResponse: null,
+   575→   575→        },
+   576→   576→      });
+   577→   577→      const { warnings } = buildDesignInput(noBlast);
+   578→   578→      expect(warnings.some(w => w.code === 'NO_BLAST_DATA')).toBe(true);
+   579→   579→      expect(warnings.some(w => w.code === 'NO_SSI_DATA')).toBe(true);
+   580→   580→    });
+   581→   581→
+   582→   582→    it('should warn when no penetration data for combined analysis', () => {
+   583→   583→      const noPen = makeMinimalAnalysisResult({
+   584→   584→        penetration: {
+   585→   585→          roofPenetration: null,
+   586→   586→          wallPenetration: null,
+   587→   587→          floorPenetration: null,
+   588→   588→        },
+   589→   589→      });
+   590→   590→      const { warnings } = buildDesignInput(noPen);
+   591→   591→      expect(warnings.some(w => w.code === 'NO_PENETRATION_DATA')).toBe(true);
+   592→   592→    });
+   593→   593→
+   594→   594→    it('should warn about multi-layer simplification', () => {
+   595→   595→      const multiLayer = makeMinimalAnalysisResult();
+   596→   596→      multiLayer.input.soil.layers.push(
+   597→   597→        {
+   598→   598→          name: 'Dense Sand',
+   599→   599→          soilTypeRef: 'sand_dense',
+   600→   600→          thickness: 4,
+   601→   601→          topElevation: -6,
+   602→   602→          unitWeight: 20,
+   603→   603→          frictionAngle: 40,
+   604→   604→          cohesion: 0,
+   605→   605→          modulusOfElasticity: 60,
+   606→   606→          poissonRatio: 0.25,
+   607→   607→          waveVelocity: 450,
+   608→   608→          category: 'cohesiveless',
+   609→   609→          relativeDensity: 0.8,
+   610→   610→          SPT_NValue: 35,
+   611→   611→          dampingRatio: 0.15,
+   612→   612→          groundShockCoefficients: {
+   613→   613→            legacy: { K: 500, n: 1.5 },
+   614→   614→            enhanced: { K: 600, n: 1.45 },
+   615→   615→          },
+   616→   616→        },
+   617→   617→      );
+   618→   618→      const { warnings } = buildDesignInput(multiLayer);
+   619→   619→      expect(warnings.some(w => w.code === 'MULTI_LAYER_SIMPLIFICATION')).toBe(true);
+   620→   620→    });
+   621→   621→  });
+   622→   622→
+   623→   623→  describe('Blast Data Transfer (DesignBlastInput)', () => {
+   624→   624→    it('should transfer TNT equivalent mass to DesignInput', () => {
+   625→   625→      const { input } = buildDesignInput(baseResult);
+   626→   626→      // From BlastParameters: tntEquivalentMass = 100 kg
+   627→   627→      expect(input.blast.tntEquivalentMass).toBeCloseTo(100, 0);
+   628→   628→    });
+   629→   629→
+   630→   630→    it('should transfer original charge mass (before TNT conversion)', () => {
+   631→   631→      const { input } = buildDesignInput(baseResult);
+   632→   632→      // From ThreatInput.explosive.chargeMass = 100 kg
+   633→   633→      expect(input.blast.chargeMass).toBeCloseTo(100, 0);
+   634→   634→    });
+   635→   635→
+   636→   636→    it('should transfer all pressure values from BlastParameters', () => {
+   637→   637→      const { input } = buildDesignInput(baseResult);
+   638→   638→      // From test data: Pso=500, Pr=1500, q=200
+   639→   639→      expect(input.blast.peakIncidentPressure).toBeCloseTo(500, 0);
+   640→   640→      expect(input.blast.peakReflectedPressure).toBeCloseTo(1500, 0);
+   641→   641→      expect(input.blast.peakDynamicPressure).toBeCloseTo(200, 0);
+   642→   642→    });
+   643→   643→
+   644→   644→    it('should preserve impulse and duration from BlastParameters', () => {
+   645→   645→      const { input } = buildDesignInput(baseResult);
+   646→   646→      // From test data: Is=2500 kPa·ms, td=10 ms
+   647→   647→      expect(input.blast.positivePhaseImpulse).toBeCloseTo(2500, 0);
+   648→   648→      expect(input.blast.positivePhaseDuration).toBeCloseTo(10, 0);
+   649→   649→    });
+   650→   650→
+   651→   651→    it('should preserve scaled distance and actual distance', () => {
+   652→   652→      const { input } = buildDesignInput(baseResult);
+   653→   653→      expect(input.blast.scaledDistance).toBeCloseTo(2.154, 2);
+   654→   654→      expect(input.blast.distance).toBeCloseTo(10, 0);
+   655→   655→    });
+   656→   656→
+   657→   657→    it('should preserve reflection coefficient', () => {
+   658→   658→      const { input } = buildDesignInput(baseResult);
+   659→   659→      // From test data: Cr = 3.0
+   660→   660→      expect(input.blast.reflectionCoefficient).toBeCloseTo(3.0, 1);
+   661→   661→    });
+   662→   662→
+   663→   663→    it('should preserve detonation type', () => {
+   664→   664→      const { input } = buildDesignInput(baseResult);
+   665→   665→      expect(input.blast.detonationType).toBe('buried');
+   666→   666→    });
+   667→   667→
+   668→   668→    it('should zero all blast fields when no BlastParameters exist', () => {
+   669→   669→      const noBlast = makeMinimalAnalysisResult({
+   670→   670→        blast: {
+   671→   671→          parameters: null,
+   672→   672→          soilInteraction: null,
+   673→   673→          roofResponse: null,
+   674→   674→          wallResponse: null,
+   675→   675→          floorResponse: null,
+   676→   676→        },
+   677→   677→      });
+   678→   678→      const { input } = buildDesignInput(noBlast);
+   679→   679→      expect(input.blast.tntEquivalentMass).toBeCloseTo(0, 5);
+   680→   680→      expect(input.blast.peakIncidentPressure).toBeCloseTo(0, 5);
+   681→   681→      expect(input.blast.positivePhaseImpulse).toBeCloseTo(0, 5);
+   682→   682→      // detonationType still comes from threat input even without blast params
+   683→   683→      expect(input.blast.detonationType).toBe('buried');
+   684→   684→    });
+   685→   685→
+   686→   686→    it('should include structure type', () => {
+   687→   687→      const { input } = buildDesignInput(baseResult);
+   688→   688→      expect(input.structureType).toBe('box');
+   689→   689→    });
+   690→   690→  });
+   691→   691→
+   692→   692→  describe('Material Extraction', () => {
+   693→   693→    it('should convert Ec from GPa to MPa', () => {
+   694→   694→      const { input } = buildDesignInput(baseResult);
+   695→   695→      // 28 GPa → 28000 MPa
+   696→   696→      expect(input.elements.roof.material.Ec).toBeCloseTo(28000, 0);
+   697→   697→    });
+   698→   698→
+   699→   699→    it('should preserve material reference', () => {
+   700→   700→      const { input } = buildDesignInput(baseResult);
+   701→   701→      expect(input.elements.roof.material.materialRef).toBe('rc_350');
+   702→   702→    });
+   703→   703→  });
+   704→   704→
+   705→   705→  describe('Design Criteria Pass-through', () => {
+   706→   706→    it('should include all criteria in the output', () => {
+   707→   707→      const { input } = buildDesignInput(baseResult);
+   708→   708→      expect(input.criteria.targetSafetyFactor).toBeCloseTo(1.5, 1);
+   709→   709→      expect(input.criteria.allowPlasticResponse).toBe(true);
+   710→   710→      expect(input.criteria.thicknessIncrement).toBeCloseTo(0.025, 4);
+   711→   711→      expect(input.criteria.maxThickness).toBeCloseTo(2.0, 1);
+   712→   712→    });
+   713→   713→
+   714→   714→    it('should allow overriding all criteria', () => {
+   715→   715→      const customCriteria: Partial<DesignCriteria> = {
+   716→   716→        targetSafetyFactor: 2.0,
+   717→   717→        allowPlasticResponse: false,
+   718→   718→        thicknessIncrement: 0.050,
+   719→   719→        concreteCover: 0.040,
+   720→   720→      };
+   721→   721→      const { input } = buildDesignInput(baseResult, customCriteria);
+   722→   722→      expect(input.criteria.targetSafetyFactor).toBeCloseTo(2.0, 1);
+   723→   723→      expect(input.criteria.allowPlasticResponse).toBe(false);
+   724→   724→      expect(input.criteria.thicknessIncrement).toBeCloseTo(0.050, 4);
+   725→   725→      expect(input.reinforcement.concreteCover).toBeCloseTo(0.040, 4);
+   726→   726→    });
+   727→   727→  });
+   728→   728→});
+   729→   729→
+   730→   730→// ═══════════════════════════════════════════════════════════════════════
+   731→   731→// DESIGN CONSTANTS VERIFICATION (Phase 0 — existence only)
+   732→   732→// ═══════════════════════════════════════════════════════════════════════
+   733→   733→
+   734→   734→describe('Design Constants', () => {
+   735→   735→  it('should have REBAR_DATABASE with standard bars', () => {
+   736→   736→    expect(REBAR_DATABASE.length).toBeGreaterThanOrEqual(6);
+   737→   737→    expect(REBAR_DATABASE[0].diameter).toBe(10);
+   738→   738→    expect(REBAR_DATABASE[3].designation).toBe('T16');
+   739→   739→    expect(REBAR_DATABASE[3].area).toBeCloseTo(201.1, 1);
+   740→   740→  });
+   741→   741→
+   742→   742→  it('should have ACI strength reduction factors', () => {
+   743→   743→    expect(ACI_STRENGTH_REDUCTION_FACTORS.flexure).toBeCloseTo(0.90, 2);
+   744→   744→    expect(ACI_STRENGTH_REDUCTION_FACTORS.shear).toBeCloseTo(0.75, 2);
+   745→   745→  });
+   746→   746→
+   747→   747→  it('should have DEFAULT_DESIGN_CRITERIA with all fields', () => {
+   748→   748→    expect(DEFAULT_DESIGN_CRITERIA.targetSafetyFactor).toBe(1.5);
+   749→   749→    expect(DEFAULT_DESIGN_CRITERIA.reinforcementGrade.fy).toBe(420);
+   750→   750→    expect(DEFAULT_DESIGN_CRITERIA.concreteCover).toBe(0.050);
+   751→   751→    expect(DEFAULT_DESIGN_CRITERIA.wallSupportCondition).toBe('fixed');
+   752→   752→  });
+   753→   753→
+   754→   754→  it('should have UFC 3-340-02 referenced in calculateSteelDIF', () => {
+   755→   755→    // DIF for fy=420: 1.0 + 0.26*420/414 = 1.264 → capped at 1.20
+   756→   756→    expect(calculateSteelDIF(420)).toBeCloseTo(1.20, 2);
+   757→   757→    expect(calculateSteelDIF(250)).toBeCloseTo(1.157, 2);
+   758→   758→  });
+   759→   759→});
