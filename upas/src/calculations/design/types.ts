@@ -164,6 +164,50 @@ export interface DesignPenetrationData {
   isSpalled: boolean;
 }
 
+/** Complete blast threat data — preserved from the analysis engine.
+ *  The design engine must receive the full blast loading history.
+ *  No blast equations are recalculated inside the Design module.
+ *
+ *  All values come directly from BlastParameters (calculated by threat/index.ts
+ *  using Kingery-Bulmash polynomials per TM 5-1300 / UFC 3-340-02).
+ *
+ *  Reference: UFC 3-340-02 Ch.2 (Free-Air Blast), TM 5-1300 Ch.2
+ */
+export interface DesignBlastInput {
+  /** TNT equivalent mass (kg) — from chargeMass × tntEquivalentFactor */
+  tntEquivalentMass: number;
+
+  /** Original charge mass W (kg) — before TNT conversion */
+  chargeMass: number;
+
+  /** Actual distance from detonation to target structure (m) */
+  distance: number;
+
+  /** Scaled distance Z = R / W^(1/3) (m/kg^⅓) */
+  scaledDistance: number;
+
+  /** Detonation type — affects ground coupling and pressure distribution */
+  detonationType: 'surface' | 'buried' | 'aerial' | 'internal';
+
+  /** Peak incident (side-on) pressure Pso (kPa) — from Kingery-Bulmash */
+  peakIncidentPressure: number;
+
+  /** Peak reflected pressure Pr (kPa) — from normal reflection coefficient */
+  peakReflectedPressure: number;
+
+  /** Peak dynamic pressure q (kPa) — from Rankine-Hugoniot */
+  peakDynamicPressure: number;
+
+  /** Positive phase impulse Is (kPa·ms) — from Kingery-Bulmash */
+  positivePhaseImpulse: number;
+
+  /** Positive phase duration td (ms) — from Kingery-Bulmash */
+  positivePhaseDuration: number;
+
+  /** Reflection coefficient Cr = Pr / Pso (dimensionless) */
+  reflectionCoefficient: number;
+}
+
 /** The complete input to the design engine.
  *  This is the ONLY type the design engine reads.
  *  Everything upstream is the adapter's responsibility.
@@ -205,15 +249,11 @@ export interface DesignInput {
   /** Structure type (affects load distribution assumptions) */
   structureType: 'box' | 'arch' | 'cylinder' | 'dome' | 'custom';
 
-  /** Blast data needed for design calculations */
-  blast: {
-    /** TNT equivalent mass (kg) */
-    tntEquivalentMass: number;
-    /** Scaled distance Z (m/kg^⅓) */
-    scaledDistance: number;
-    /** Detonation type (affects coupling and pressure distribution) */
-    detonationType: 'surface' | 'buried' | 'aerial' | 'internal';
-  };
+  /** Complete blast threat data — preserved from BlastParameters/Threat.
+   *  The design engine must receive the full blast loading history.
+   *  No blast equations are recalculated inside the Design module.
+   *  Reference: UFC 3-340-02 (loads), TM 5-1300 (KB polynomials) */
+  blast: DesignBlastInput;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

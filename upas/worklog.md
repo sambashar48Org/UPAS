@@ -23,3 +23,21 @@ Stage Summary:
 - G2 resolved: independent soil-pressure.ts module (per engineer note 2)
 - Build successful
 - Pre-existing 16 TS errors in UI components (unrelated to Phase 0)
+
+---
+Task ID: Phase 0 (continuation)
+Agent: main
+Task: Add DesignBlastInput — complete blast threat data preservation
+
+Work Log:
+- Added DesignBlastInput interface (11 fields) to design/types.ts: tntEquivalentMass, chargeMass, distance, scaledDistance, detonationType, peakIncidentPressure, peakReflectedPressure, peakDynamicPressure, positivePhaseImpulse, positivePhaseDuration, reflectionCoefficient
+- Updated design-input-adapter.ts to populate all 11 blast fields directly from BlastParameters (no recalculation)
+- Added 6 new blast-specific tests (total 61): TNT mass transfer, charge mass, all pressures, impulse+duration, distance+scaledDistance, reflectionCoefficient, detonationType, zero-fill fallback, structure type
+- Verified architecture: blast data flows BlastParameters → adapter → DesignBlastInput → future design engine (no equations duplicated)
+
+Stage Summary:
+- 61 new design tests, 165 existing = 226 total all passing
+- DesignBlastInput preserves complete blast loading history from KB/TM 5-1300 calculations
+- 0 modifications to: results/, structure/, soil/, threat/, materials.json
+- 0 TS errors in design files, 0 in constants.ts
+- Build successful

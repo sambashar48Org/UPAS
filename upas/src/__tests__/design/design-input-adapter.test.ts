@@ -620,15 +620,66 @@ describe('Design Input Adapter', () => {
     });
   });
 
-  describe('Blast Data Pass-through', () => {
-    it('should include TNT mass and scaled distance', () => {
+  describe('Blast Data Transfer (DesignBlastInput)', () => {
+    it('should transfer TNT equivalent mass to DesignInput', () => {
       const { input } = buildDesignInput(baseResult);
+      // From BlastParameters: tntEquivalentMass = 100 kg
       expect(input.blast.tntEquivalentMass).toBeCloseTo(100, 0);
-      expect(input.blast.scaledDistance).toBeCloseTo(2.154, 2);
     });
 
-    it('should include detonation type', () => {
+    it('should transfer original charge mass (before TNT conversion)', () => {
       const { input } = buildDesignInput(baseResult);
+      // From ThreatInput.explosive.chargeMass = 100 kg
+      expect(input.blast.chargeMass).toBeCloseTo(100, 0);
+    });
+
+    it('should transfer all pressure values from BlastParameters', () => {
+      const { input } = buildDesignInput(baseResult);
+      // From test data: Pso=500, Pr=1500, q=200
+      expect(input.blast.peakIncidentPressure).toBeCloseTo(500, 0);
+      expect(input.blast.peakReflectedPressure).toBeCloseTo(1500, 0);
+      expect(input.blast.peakDynamicPressure).toBeCloseTo(200, 0);
+    });
+
+    it('should preserve impulse and duration from BlastParameters', () => {
+      const { input } = buildDesignInput(baseResult);
+      // From test data: Is=2500 kPa·ms, td=10 ms
+      expect(input.blast.positivePhaseImpulse).toBeCloseTo(2500, 0);
+      expect(input.blast.positivePhaseDuration).toBeCloseTo(10, 0);
+    });
+
+    it('should preserve scaled distance and actual distance', () => {
+      const { input } = buildDesignInput(baseResult);
+      expect(input.blast.scaledDistance).toBeCloseTo(2.154, 2);
+      expect(input.blast.distance).toBeCloseTo(10, 0);
+    });
+
+    it('should preserve reflection coefficient', () => {
+      const { input } = buildDesignInput(baseResult);
+      // From test data: Cr = 3.0
+      expect(input.blast.reflectionCoefficient).toBeCloseTo(3.0, 1);
+    });
+
+    it('should preserve detonation type', () => {
+      const { input } = buildDesignInput(baseResult);
+      expect(input.blast.detonationType).toBe('buried');
+    });
+
+    it('should zero all blast fields when no BlastParameters exist', () => {
+      const noBlast = makeMinimalAnalysisResult({
+        blast: {
+          parameters: null,
+          soilInteraction: null,
+          roofResponse: null,
+          wallResponse: null,
+          floorResponse: null,
+        },
+      });
+      const { input } = buildDesignInput(noBlast);
+      expect(input.blast.tntEquivalentMass).toBeCloseTo(0, 5);
+      expect(input.blast.peakIncidentPressure).toBeCloseTo(0, 5);
+      expect(input.blast.positivePhaseImpulse).toBeCloseTo(0, 5);
+      // detonationType still comes from threat input even without blast params
       expect(input.blast.detonationType).toBe('buried');
     });
 

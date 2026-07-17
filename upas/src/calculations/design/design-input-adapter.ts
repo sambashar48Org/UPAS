@@ -382,6 +382,35 @@ export function buildDesignInput(
   }
 
   // ─── Assemble DesignInput ───
+  // Blast data: complete preservation from BlastParameters — no recalculation
+  const blast: DesignInput['blast'] = blastParams
+    ? {
+        tntEquivalentMass: blastParams.tntEquivalentMass,
+        chargeMass: analysisResult.input.threat.explosive.chargeMass,
+        distance: blastParams.distance,
+        scaledDistance: blastParams.scaledDistance,
+        detonationType: analysisResult.input.threat.detonationType,
+        peakIncidentPressure: blastParams.peakIncidentPressure,
+        peakReflectedPressure: blastParams.peakReflectedPressure,
+        peakDynamicPressure: blastParams.peakDynamicPressure,
+        positivePhaseImpulse: blastParams.positivePhaseImpulse,
+        positivePhaseDuration: blastParams.positivePhaseDuration,
+        reflectionCoefficient: blastParams.reflectionCoefficient,
+      }
+    : {
+        tntEquivalentMass: 0,
+        chargeMass: 0,
+        distance: 0,
+        scaledDistance: 0,
+        detonationType: analysisResult.input.threat.detonationType,
+        peakIncidentPressure: 0,
+        peakReflectedPressure: 0,
+        peakDynamicPressure: 0,
+        positivePhaseImpulse: 0,
+        positivePhaseDuration: 0,
+        reflectionCoefficient: 0,
+      };
+
   const input: DesignInput = {
     elements,
     soil,
@@ -394,11 +423,7 @@ export function buildDesignInput(
     penetration,
     burialDepth: analysisResult.input.structure.burialDepth,
     structureType: analysisResult.input.structure.type,
-    blast: {
-      tntEquivalentMass: blastParams?.tntEquivalentMass ?? 0,
-      scaledDistance: blastParams?.scaledDistance ?? 0,
-      detonationType: analysisResult.input.threat.detonationType,
-    },
+    blast,
   };
 
   return { input, warnings };
