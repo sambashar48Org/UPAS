@@ -23,7 +23,7 @@ import type {
   BlastParameters,
   PenetrationParameters,
 } from '../types';
-import type { ProjectInput } from '../types';
+import type { ProjectInput, SoilAssessment } from '../types';
 import {
   WATER_UNIT_WEIGHT,
   SOIL_ATTENUATION_EXPONENTS,
@@ -31,6 +31,11 @@ import {
   NDRC_SOIL_CONSTANT,
   TNT_DENSITY,
 } from '../constants';
+
+// Sprint 3D: Enhanced modules (delegation targets)
+import { calculateWavePropagation } from './wave-propagation';
+import { calculateEnhancedGroundShock } from './ground-shock-enhanced';
+import { assessSoilHazards } from './soil-assessment';
 
 // ─── Ground Shock Coefficients (Drake & Little) ─────────────────────
 // PPV = K × (W^(1/3) / R)^n  [m/s]
@@ -423,7 +428,8 @@ export function calculateSoilStructureInteraction(
   const groundShockDistance = Math.max(threat.standoffDistance, structure.burialDepth);
   const groundShock = calculateGroundShock(blastParams, soil, groundShockDistance);
 
-  return {
+  // ─── Base result (legacy fields — always populated) ───
+  const baseResult: SoilStructureInteraction = {
     overburdenPressure: overburden.totalStress,
     effectiveStress: overburden.effectiveStress,
     soilAttenuationFactor: attenuation.attenuationFactor,
@@ -432,7 +438,38 @@ export function calculateSoilStructureInteraction(
     groundShockArrivalTime: groundShock.arrivalTime,
     averageWaveVelocity: attenuation.averageWaveVelocity,
     averageUnitWeight: attenuation.averageUnitWeight,
+    // Sprint 3D: Enhanced fields — null by default (legacy mode)
+    layerTravelTimes: null,
+    impedanceMismatchLosses: null,
+    totalImpedanceTransmission: null,
+    ppvDamageLevel: null,
   };
+
+  // ─── Sprint 3D: Enhanced model branch ───
+  // When useEnhancedSoilModel=true, delegate to enhanced modules
+  // and populate optional SSI fields WITHOUT changing base values.
+  if (input.settings.useEnhancedSoilModel) {
+    // Wave propagation through full soil cover
+    const waveProp = calculateWavePropagation(soil, 0, crownDepth);
+
+    // Enhanced ground shock with path-interpolated coefficients
+    const enhancedShock = calculateEnhancedGroundShock(
+      blastParams, soil, groundShockDistance, waveProp,
+    );
+
+    // Soil hazard assessment (independent, does not touch results/index.ts)
+    const assessment: SoilAssessment = assessSoilHazards(waveProp, enhancedShock);
+
+    // Populate enhanced fields on the base result
+    baseResult.layerTravelTimes = waveProp.layerTravelTimes;
+    baseResult.impedanceMismatchLosses = waveProp.boundaryTransmissions.map(
+      t => 1 - t, // Loss = 1 - transmission
+    );
+    baseResult.totalImpedanceTransmission = waveProp.totalTransmission;
+    baseResult.ppvDamageLevel = assessment.ppvDamage?.level ?? null;
+  }
+
+  return baseResult;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

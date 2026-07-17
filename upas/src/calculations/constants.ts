@@ -207,6 +207,22 @@ export const PROTECTION_THRESHOLDS = {
 /** Water unit weight (kN/m³) */
 export const WATER_UNIT_WEIGHT = 9.81;
 
+// ─── Sprint 3D: PPV Damage Thresholds ────────────────────────────
+// Reference: TM 5-855-1 Table 5-1, DIN 4150-3, ASCE 59-11
+// PPV in m/s — for underground protective structures
+
+export const PPV_DAMAGE_THRESHOLDS = {
+  negligible:  { maxPPV: 0.05, descriptionAr: 'لا ضرر',                descriptionEn: 'No damage' },
+  minor:       { maxPPV: 0.20, descriptionAr: 'ضرر طفيف — تشققات سطحية', descriptionEn: 'Minor damage — superficial cracking' },
+  moderate:    { maxPPV: 0.50, descriptionAr: 'ضرر متوسط — تشققات هيكلية', descriptionEn: 'Moderate damage — structural cracking' },
+  severe:      { maxPPV: 1.00, descriptionAr: 'ضرر شديد — تشوهات كبيرة', descriptionEn: 'Severe damage — significant deformation' },
+  heavy:       { maxPPV: Infinity, descriptionAr: 'ضرر كبير — خطر انهيار', descriptionEn: 'Heavy damage — collapse risk' },
+} as const;
+
+// ─── Sprint 3D: Impedance Mismatch Warning Threshold ──────────────
+/** Impedance ratio above which a warning is generated (dimensionless) */
+export const IMPEDANCE_MISMATCH_WARNING_RATIO = 3.0;
+
 // ─── Concrete Design Constants (ACI 318) ───────────────────────────
 
 /** ACI 318 concrete modulus of elasticity factor */

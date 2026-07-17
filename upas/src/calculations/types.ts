@@ -72,6 +72,19 @@ export interface SoilLayerInput {
   waveVelocity: number;
   /** Soil category: cohesiveless, cohesive, rock */
   category: string;
+
+  // ─── Sprint 3D: Enhanced soil properties (resolved from soil-types.json v2) ───
+  /** Relative density Dr (0–1), null for cohesive soils and rock */
+  relativeDensity: number | null;
+  /** SPT N-value (blow count) */
+  SPT_NValue: number;
+  /** Material damping ratio (dimensionless) */
+  dampingRatio: number;
+  /** Per-type ground shock coefficients — legacy (category-based) + enhanced (type-specific) */
+  groundShockCoefficients: {
+    legacy: { K: number; n: number };
+    enhanced: { K: number; n: number };
+  };
 }
 
 // ─── Structure Input ────────────────────────────────────────────────
@@ -211,6 +224,9 @@ export interface AnalysisSettingsInput {
 
   /** Allow plastic deformation in structure response */
   allowPlasticResponse: boolean;
+
+  /** Sprint 3D: Use enhanced multi-layer soil model instead of legacy single-layer */
+  useEnhancedSoilModel: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -280,6 +296,16 @@ export interface SoilStructureInteraction {
   /** Average soil properties along wave path */
   averageWaveVelocity: number;
   averageUnitWeight: number;
+
+  // ─── Sprint 3D: Enhanced fields (populated when useEnhancedSoilModel=true) ───
+  /** Per-layer wave travel times (ms) — null when legacy model */
+  layerTravelTimes: number[] | null;
+  /** Cumulative impedance mismatch losses at each layer boundary — null when legacy */
+  impedanceMismatchLosses: number[] | null;
+  /** Total impedance mismatch transmission factor (0–1) — null when legacy */
+  totalImpedanceTransmission: number | null;
+  /** PPV damage assessment level — null when legacy */
+  ppvDamageLevel: string | null;
 }
 
 // ─── Structure Response Parameters ─────────────────────────────────
@@ -502,4 +528,114 @@ export interface GeometryResults {
   threatDirection: Coordinate3D;
   /** Soil cover thickness above structure roof (m) */
   soilCoverThickness: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPRINT 3D: Enhanced Soil Mechanics Types
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Wave Propagation Result ───────────────────────────────────────
+/** Result of multi-layer blast wave propagation analysis.
+ *  Computed by soil/wave-propagation.ts */
+export interface WavePropagationResult {
+  /** Per-layer travel times through the soil profile (ms) */
+  layerTravelTimes: number[];
+
+  /** Per-layer acoustic impedance Z = ρ × Vs (kg/m²·s) */
+  layerImpedances: number[];
+
+  /** Transmission coefficient at each layer boundary (0–1) */
+  boundaryTransmissions: number[];
+
+  /** Cumulative transmission factor (product of all boundary transmissions) */
+  totalTransmission: number;
+
+  /** Total wave travel time through all layers (ms) */
+  totalTravelTime: number;
+
+  /** Cumulative attenuation factor (geometric spreading + impedance losses) */
+  cumulativeAttenuation: number;
+
+  /** Per-layer attenuation breakdown */
+  layerAttenuations: number[];
+}
+
+// ─── Enhanced Ground Shock Result ──────────────────────────────────
+/** Result of enhanced multi-layer ground shock analysis.
+ *  Computed by soil/ground-shock-enhanced.ts */
+export interface EnhancedGroundShockResult {
+  /** PPV at each layer boundary (m/s) — entry/exit per layer */
+  perLayerPPV: number[];
+
+  /** Final PPV at the target point (m/s) */
+  peakParticleVelocity: number;
+
+  /** Arrival time at each layer boundary (ms) */
+  perLayerArrivalTimes: number[];
+
+  /** Total arrival time at target (ms) */
+  totalArrivalTime: number;
+
+  /** Dominant frequency at target (Hz) */
+  frequency: number;
+
+  /** Duration at target (ms) */
+  duration: number;
+
+  /** Path-interpolated K coefficient used */
+  interpolatedK: number;
+
+  /** Path-interpolated n exponent used */
+  interpolatedN: number;
+}
+
+// ─── PPV Damage Assessment ────────────────────────────────────────
+/** Damage assessment based on Peak Particle Velocity.
+ *  Reference: TM 5-855-1 Table 5-1, DIN 4150-3 */
+export interface PPVDamageAssessment {
+  /** Assessed damage level */
+  level: 'negligible' | 'minor' | 'moderate' | 'severe' | 'heavy';
+
+  /** PPV threshold for this level (m/s) */
+  threshold: number;
+
+  /** PPV value assessed (m/s) */
+  assessedPPV: number;
+
+  /** Description in Arabic */
+  descriptionAr: string;
+
+  /** Description in English */
+  descriptionEn: string;
+}
+
+// ─── Soil Assessment Result ───────────────────────────────────────
+/** Independent soil hazard assessment.
+ *  Computed by soil/soil-assessment.ts — NOT in results/index.ts */
+export interface SoilAssessment {
+  /** PPV damage assessment */
+  ppvDamage: PPVDamageAssessment | null;
+
+  /** Maximum impedance mismatch ratio at any boundary (>1 = amplification) */
+  maxImpedanceRatio: number;
+
+  /** Liquefaction potential — deferred to future sprint */
+  liquefactionPotential: 'not_assessed';
+
+  /** Soil-specific engineering warnings */
+  warnings: SoilAssessmentWarning[];
+}
+
+/** Warning from soil assessment — independent from calculations/results */
+export interface SoilAssessmentWarning {
+  /** Warning code */
+  code: string;
+  /** Warning message (Arabic) */
+  messageAr: string;
+  /** Warning message (English) */
+  messageEn: string;
+  /** Severity */
+  severity: 'info' | 'warning' | 'critical';
+  /** Related soil layer index (0-based) or null if general */
+  layerIndex: number | null;
 }

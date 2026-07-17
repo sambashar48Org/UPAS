@@ -62,6 +62,7 @@ export interface AnalysisSettings {
   includeSSI?: boolean;
   targetSafetyFactor?: number;
   allowPlasticResponse?: boolean;
+  useEnhancedSoilModel?: boolean;
 }
 
 /**
@@ -221,6 +222,7 @@ function resolveProjectInput(params: {
       includeSSI: settings?.includeSSI ?? true,
       targetSafetyFactor: settings?.targetSafetyFactor ?? 1.4,
       allowPlasticResponse: settings?.allowPlasticResponse ?? true,
+      useEnhancedSoilModel: settings?.useEnhancedSoilModel ?? false,
     },
   };
 }
@@ -244,6 +246,20 @@ function resolveSoilInput(profile: SoilProfile): ProjectInput['soil'] {
       poissonRatio: soilType.poissonRatio ?? 0.3,
       waveVelocity: safeConvert(soilType.waveVelocity, toMetersPerSecond, 200),
       category: soilType.category ?? 'cohesiveless',
+      // Sprint 3D: Enhanced properties from soil-types.json v2
+      relativeDensity: (soilType as any).relativeDensity ?? null,
+      SPT_NValue: (soilType as any).SPT_NValue ?? 10,
+      dampingRatio: (soilType as any).dampingRatio ?? 0.2,
+      groundShockCoefficients: {
+        legacy: {
+          K: (soilType as any).groundShock?.legacy?.K ?? 500,
+          n: (soilType as any).groundShock?.legacy?.n ?? 1.5,
+        },
+        enhanced: {
+          K: (soilType as any).groundShock?.enhanced?.K ?? 500,
+          n: (soilType as any).groundShock?.enhanced?.n ?? 1.5,
+        },
+      },
     };
   });
 

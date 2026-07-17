@@ -1,122 +1,26 @@
 ---
 Task ID: 1
-Agent: Super Z (Main)
-Task: Sprint 1 — UPAS Project Setup & Foundation
+Agent: main
+Task: Sprint 3D Phase 1 — Wave Propagation + Enhanced Ground Shock
 
 Work Log:
-- Created Vite + React + TypeScript project at /home/z/my-project/upas
-- Installed all approved dependencies (Three.js, R3F, Drei, Zustand, Tailwind CSS 4, Vitest, RTL, react-router-dom, uuid)
-- Created 24-directory architecture: models/, validation/, stores/, data/, database/, engine/scene/, components/{layout,screens,scenes,ui}, types/, utils/units/, audit/, calculations/, __tests__/{models,stores,components}
-- Created 7 domain model files: Project.ts, Threat.ts, Bomb.ts, Soil.ts, Structure.ts, Material.ts, AnalysisResult.ts, VisualizationSettings.ts (all with factory functions)
-- Created engineering unit system (Modification #2): utils/units/ with value+unit type, conversion tables for length/mass/pressure/force/density/velocity, helper functions
-- Created validation layer (Modification #3): projectValidation.ts, soilValidation.ts, structureValidation.ts — all independent, no React deps
-- Created data layer: materials.json (7 materials), bomb-types.json (7 explosives), soil-types.json (7 soil types), database/index.ts (in-memory entity storage)
-- Configured TypeScript strict mode, Tailwind CSS 4 with RTL, Vitest
-- Implemented Zustand stores: projectStore (project CRUD + entity management) and uiStore (navigation, sidebar, notifications, scene state)
-- Created 3 application screens: Dashboard (stats + quick actions), NewProject (form), AnalysisView (placeholder cards)
-- Created Sidebar (RTL, dark blue, collapsible), Header, AppLayout
-- Created EngineeringScene: R3F Canvas with OrbitControls, GridHelper, AxesHelper, lighting, FPS monitoring
-- Fixed TypeScript issues: verbatimModuleSyntax imports, null checks, vitest/config import
-- All 46 tests pass (18 model, 18 unit conversion, 10 store tests)
-- Production build succeeds (217KB JS, 20KB CSS)
-- Took 4 screenshots: dashboard, new project, analysis view, collapsed sidebar
+- Created 18 regression tests (numerical toBeCloseTo, NOT snapshots) for 3 soil profiles × 6 functions
+- Extended soil-types.json v2 with: relativeDensity, SPT_NValue, dampingRatio, groundShockCoefficients (legacy + enhanced) for all 7 types
+- Added Sprint 3D types to calculations/types.ts: WavePropagationResult, EnhancedGroundShockResult, PPVDamageAssessment, SoilAssessment, SoilAssessmentWarning
+- Extended SoilLayerInput with 5 new fields (backward compatible)
+- Added useEnhancedSoilModel to AnalysisSettingsInput and AnalysisSettings
+- Added PPV_DAMAGE_THRESHOLDS and IMPEDANCE_MISMATCH_WARNING_RATIO to constants.ts
+- Updated resolveSoilInput() in calculations/index.ts to resolve new JSON properties
+- Created wave-propagation.ts: multi-layer travel time, acoustic impedance, transmission coefficients, water table effect
+- Created ground-shock-enhanced.ts: path-interpolated K,n coefficients, per-layer PPV decay, damping attenuation
+- Created soil-assessment.ts: PPV damage assessment (TM 5-855-1), impedance mismatch warnings, liquefactionPotential: "not_assessed"
+- Modified soil/index.ts: delegation branch in calculateSoilStructureInteraction() — legacy path UNCHANGED, enhanced fields populated when useEnhancedSoilModel=true
+- Zero modifications to calculations/results/index.ts (per engineer constraint)
+- Legacy ground shock coefficients preserved alongside enhanced (nested structure)
+- AC-14 integration test: full Input → Calculation → FullAnalysisResult pipeline with useEnhancedSoilModel=true
 
 Stage Summary:
-- Sprint 1 COMPLETE — all 13 tasks done
-- 37 source files created in src/
-- 46/46 tests passing
-- TypeScript strict mode — zero type errors
-- Production build: 217KB JS + 20KB CSS
-- Screenshots saved to /home/z/my-project/download/
-
----
-Task ID: 2
-Agent: Super Z (Main) + full-stack-developer subagent
-Task: Sprint 2 — 3D Engineering Visualization Platform
-
-Work Log:
-- Updated uiStore with Sprint 2 state: selection, camera presets, section view, database view, properties panel
-- Updated Sidebar: added Database section with expandable sub-menu (Bombs, Materials, Soil, Structures, Standards, Projects)
-- Redesigned Dashboard: engineering-focused layout with recent projects, materials list, explosives list, soil types strip
-- Created ParametricStructure.tsx: Box (hollow 6-face), Arch (walls + half-cylinder roof), Cylinder/Tunnel (horizontal hollow cylinder + floor)
-- Created SoilLayers3D.tsx: 30x30 horizontal slabs, color-coded by type (sand=yellow, clay=brown, rock=gray), water table plane, selectable
-- Created EngineeringLabels.tsx: 3D HTML labels using Drei Html (structure name/type, soil layer names)
-- Created DimensionLines.tsx: Length, Width, Height, Wall/Roof thickness dimension lines with value labels
-- Created CameraController.tsx: 5 presets (perspective, top, front, side, back) with smooth lerp animation
-- Created SelectionManager.tsx: FPS counter, scene ready signal, click-to-deselect ground plane
-- Updated EngineeringScene.tsx: full scene composition with all 3D objects
-- Created PropertiesPanel.tsx: 320px side panel showing structure or soil layer properties when selected
-- Created CameraToolbar.tsx: floating camera preset buttons
-- Created SectionViewControls.tsx: toggle section view + per-layer visibility checkboxes
-- Redesigned AnalysisView: 70% 3D scene + 30% properties panel, auto-seeds demo data, overlays toolbars
-- Created DatabaseView: tabbed browser for bombs/materials/soil-types/projects with engineering data tables
-- Updated App.tsx with 'database' route
-- Fixed TypeScript errors: Header viewLabels, Dashboard imports, DatabaseView paths, noUncheckedIndexedAccess
-- All 46 Sprint 1 tests still pass
-- Production build: 1.16MB JS (includes Three.js) + 23KB CSS
-- Took 9 screenshots: dashboard, new project, 3D scene, camera toolbar, top view, front view, perspective, database, section view, soil types DB
-
-Stage Summary:
-- Sprint 2 COMPLETE — all 14 tasks done
-- 48 total source files (11 new in Sprint 2)
-- 6 new 3D engine components (ParametricStructure, SoilLayers3D, EngineeringLabels, DimensionLines, CameraController, SelectionManager)
-- 3 new UI components (PropertiesPanel, CameraToolbar, SectionViewControls)
-- 1 new screen (DatabaseView), 2 redesigned (Dashboard, AnalysisView)
-- All geometry is 100% parametric (no GLTF)
-- calculations/ directory remains empty as instructed
-- 46/46 tests passing
-- TypeScript zero errors
-- 9 screenshots saved to /home/z/my-project/download/---
-Task ID: 1
-Agent: Main Agent
-Task: Sprint 2.5 — Engineering Visualization Upgrade
-
-Work Log:
-- Read all existing Sprint 2 source files (12 files) to understand current state
-- Updated uiStore.ts: Added VisualizationMode (normal/surface/cutaway/xray), AutoFit, StructurePart selection, ObjectTree state
-- Rewrote CameraController.tsx: Added bounding-box-based auto-fit camera (like AutoCAD/Revit), dynamic orbit target based on structure
-- Rewrote SoilLayers3D.tsx: 3 visualization modes (Surface=hide soil, Cutaway=clipping plane z>0, X-Ray=transparent+wireframe), reduced SIZE from 30→16 for better proportions
-- Rewrote ParametricStructure.tsx: Per-part materials (roof/wall/floor), click-to-select individual parts, wireframe edge overlay, better concrete colors
-- Rewrote EngineeringLabels.tsx: Structured labels with name+type+dimensions+material, ground level marker (±0.00), per-part labels (roof/wall/floor thickness)
-- Rewrote DimensionLines.tsx: Arrow heads, extension lines from object to dimension line, engineering-style annotation boxes
-- Created ObjectTree.tsx: Revit-style tree (Ground > Soil Layers, Structure > Roof/Walls/Floor, Threat > Bomb), click-to-select
-- Created VisualizationModeControls.tsx: 4 mode buttons + Auto-fit button
-- Rewrote PropertiesPanel.tsx: Real engineering data from JSON (soil type properties, material names, DIF values), per-part detail views
-- Updated SectionViewControls.tsx: Only visible in normal/cutaway modes
-- Updated EngineeringScene.tsx: localClippingEnabled for cutaway, dynamic orbit target, fill light
-- Updated AnalysisView/index.tsx: 3-panel layout (ObjectTree | 3D Scene | Properties), mode indicator badge, z-index fix
-
-Stage Summary:
-- 7 files modified, 3 files created
-- All 46 tests pass, TypeScript clean, production build succeeds
-- 6 high-quality screenshots captured showing all features
-- calculations/ directory remains EMPTY as required
-- No GLTF models used — everything parametric
-
----
-Task ID: 3B
-Agent: Alpha (Main)
-Task: Sprint 3B — Analysis Pipeline Integration & Results
-
-Work Log:
-- Created AnalysisPipeline service (src/services/analysis/) — validate → calculate → convert → report
-- Created Visualization layer (src/visualization/) — 3 adapters + 3 ViewModel types
-- Created Demo Project factory (src/data/demoProject.ts) — reusable test scenario
-- Created Input Forms (Soil/Structure/Threat) with database-driven dropdowns
-- Created Results Panel reading ResultViewModel (never FullAnalysisResult)
-- Created Report Viewer reading ReportViewModel (isolated from calculations)
-- Created 3D Components: ThreatObject3D, DamageZones3D, CutPlane with depth slider
-- Created AnalysisToolbar (Run button + tab selector)
-- Created useAnalysisPipeline hook (thin React wrapper)
-- Updated stores (projectStore: isAnalyzing/lastFullResult/lastReport; uiStore: analysisTab/cutPlaneDepth/toggles)
-- Updated EngineeringScene, ObjectTree, VisualizationModeControls
-- Rewrote AnalysisView with full pipeline integration
-- Added 17 new tests (106 total, all passing)
-- AC-13 verified: headless analysis without UI
-
-Stage Summary:
-- 19 files created, 8 files modified
-- 106 tests passing (0 failures)
-- TypeScript: 0 errors
-- Build: successful (382 KB gzip)
-- Architecture: strict layer separation maintained (UI → Services → Calculations, VisualizationAdapter → 3D)
+- 165 tests pass (117 original + 18 regression + 30 new)
+- TypeScript: zero errors
+- Legacy mode: all original results identical (regression tests confirm)
+- Enhanced mode: new SSI fields populated (layerTravelTimes, impedanceMismatchLosses, totalImpedanceTransmission, ppvDamageLevel)

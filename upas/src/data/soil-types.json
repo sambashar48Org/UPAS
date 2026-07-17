@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2026-07-16",
+  "version": "2.0.0",
+  "lastUpdated": "2026-07-17",
   "soilTypes": [
     {
       "ref": "sand_loose",
@@ -13,7 +13,14 @@
       "modulusOfElasticity": { "value": 20, "unit": "MPa" },
       "poissonRatio": 0.3,
       "waveVelocity": { "value": 200, "unit": "m/s" },
-      "description": "Loose granular soil — low confinement"
+      "description": "Loose granular soil — low confinement",
+      "relativeDensity": 0.3,
+      "SPT_NValue": 5,
+      "dampingRatio": 0.25,
+      "groundShock": {
+        "legacy": { "K": 500, "n": 1.5 },
+        "enhanced": { "K": 450, "n": 1.6 }
+      }
     },
     {
       "ref": "sand_medium",
@@ -26,7 +33,14 @@
       "modulusOfElasticity": { "value": 40, "unit": "MPa" },
       "poissonRatio": 0.28,
       "waveVelocity": { "value": 300, "unit": "m/s" },
-      "description": "Medium dense sand — common foundation soil"
+      "description": "Medium dense sand — common foundation soil",
+      "relativeDensity": 0.5,
+      "SPT_NValue": 15,
+      "dampingRatio": 0.20,
+      "groundShock": {
+        "legacy": { "K": 500, "n": 1.5 },
+        "enhanced": { "K": 520, "n": 1.5 }
+      }
     },
     {
       "ref": "sand_dense",
@@ -39,7 +53,14 @@
       "modulusOfElasticity": { "value": 60, "unit": "MPa" },
       "poissonRatio": 0.25,
       "waveVelocity": { "value": 450, "unit": "m/s" },
-      "description": "Dense granular soil — high bearing capacity"
+      "description": "Dense granular soil — high bearing capacity",
+      "relativeDensity": 0.8,
+      "SPT_NValue": 35,
+      "dampingRatio": 0.15,
+      "groundShock": {
+        "legacy": { "K": 500, "n": 1.5 },
+        "enhanced": { "K": 600, "n": 1.45 }
+      }
     },
     {
       "ref": "clay_soft",
@@ -52,7 +73,14 @@
       "modulusOfElasticity": { "value": 8, "unit": "MPa" },
       "poissonRatio": 0.4,
       "waveVelocity": { "value": 150, "unit": "m/s" },
-      "description": "Soft cohesive soil — low shear strength"
+      "description": "Soft cohesive soil — low shear strength",
+      "relativeDensity": null,
+      "SPT_NValue": 3,
+      "dampingRatio": 0.30,
+      "groundShock": {
+        "legacy": { "K": 200, "n": 1.3 },
+        "enhanced": { "K": 180, "n": 1.35 }
+      }
     },
     {
       "ref": "clay_stiff",
@@ -65,7 +93,14 @@
       "modulusOfElasticity": { "value": 30, "unit": "MPa" },
       "poissonRatio": 0.35,
       "waveVelocity": { "value": 300, "unit": "m/s" },
-      "description": "Stiff cohesive soil — moderate strength"
+      "description": "Stiff cohesive soil — moderate strength",
+      "relativeDensity": null,
+      "SPT_NValue": 15,
+      "dampingRatio": 0.22,
+      "groundShock": {
+        "legacy": { "K": 200, "n": 1.3 },
+        "enhanced": { "K": 250, "n": 1.28 }
+      }
     },
     {
       "ref": "rock_weathered",
@@ -78,7 +113,14 @@
       "modulusOfElasticity": { "value": 5000, "unit": "MPa" },
       "poissonRatio": 0.25,
       "waveVelocity": { "value": 1500, "unit": "m/s" },
-      "description": "Weathered/fractured rock — reduced properties"
+      "description": "Weathered/fractured rock — reduced properties",
+      "relativeDensity": null,
+      "SPT_NValue": 50,
+      "dampingRatio": 0.10,
+      "groundShock": {
+        "legacy": { "K": 700, "n": 1.8 },
+        "enhanced": { "K": 650, "n": 1.75 }
+      }
     },
     {
       "ref": "rock_sound",
@@ -91,7 +133,14 @@
       "modulusOfElasticity": { "value": 30000, "unit": "MPa" },
       "poissonRatio": 0.2,
       "waveVelocity": { "value": 3500, "unit": "m/s" },
-      "description": "Intact rock mass — high strength"
+      "description": "Intact rock mass — high strength",
+      "relativeDensity": null,
+      "SPT_NValue": 100,
+      "dampingRatio": 0.05,
+      "groundShock": {
+        "legacy": { "K": 700, "n": 1.8 },
+        "enhanced": { "K": 750, "n": 1.82 }
+      }
     }
   ]
 }
