@@ -74,3 +74,44 @@ Stage Summary:
 - 16 pre-existing UI tsc errors confirmed unrelated (PropertiesPanel, ObjectTree, CameraController, ThreatObject3D)
 - No existing files modified except additive changes to types.ts, constants.ts, index.ts, materials.json
 - No design calculation files created (no structural-design.ts, reinforcement-design.ts, etc.)
+---
+Task ID: 4b
+Agent: Super Z (main)
+Task: Phase 4B — Structural Design Core
+
+Work Log:
+- Created src/calculations/design/reinforcement-design.ts
+  - calculateEffectiveDepth: d = h - cover - db/2 (mm)
+  - calculateRequiredAs: quadratic solution As = (-B - √(B²-4AC)) / 2A
+  - calculateFlexuralCapacity: φMn = φ × As × fy × (d - a/2)
+  - calculateShearCapacity: φVc = φ × 0.17√f'c × b × d (ACI 318-19)
+  - selectReinforcement: iterate REBAR_DATABASE, clamp spacing [75, 200]mm
+  - selectDistributionReinforcement: 25% of main, min T10
+
+- Created src/calculations/design/structural-design.ts
+  - calculateDesignLoad: Roof=reflectedPressure+static, Wall=reflected×0.7+static, Floor=dynamicPressure+static
+  - calculateDesignMoment: SS=wL²/8, Fixed=wL²/12, Partial=wL²/10
+  - calculateDesignShear: Vu=wL/2
+  - calculateDeflection: δ = C×w×L⁴/(E×I) with gross Ig
+  - designElement: iterative thickness search (max 100 iterations, +25mm increment)
+    - As calculated with static fy (DIF on capacity only per UFC 3-340-02)
+    - Capacity Mn uses fy×DIF_steel, shear uses f'c×DIF_concrete
+  - runStructuralDesign: entry point for all 3 elements
+
+- Design Input Contract enforced:
+  - NO imports from calculations/types.ts (analysis types)
+  - NO imports from results/, structure/, soil/, threat/
+  - All blast data from DesignInput.blast (DesignBlastInput)
+  - No KB polynomials, no TNT conversion, no blast recalculation
+
+- Created src/__tests__/design/structural-design.test.ts (26 tests)
+  - All 15 required tests implemented
+  - 11 additional tests (deflection, shear, bar selection, effective depth, round-trip)
+
+Stage Summary:
+- Gate 1: vitest run → 274/274 PASS
+- Gate 2: tsc --noEmit → ZERO errors in src/calculations/design/
+- Gate 3: build → pre-existing CWD issue (not caused by Phase 4B)
+- Git push: 8646b8c → main
+- Files created: reinforcement-design.ts, structural-design.ts, structural-design.test.ts
+- Files NOT created: design-verification.ts, burial-optimization.ts (per spec)
