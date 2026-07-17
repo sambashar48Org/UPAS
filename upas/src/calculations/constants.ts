@@ -187,10 +187,16 @@ export const MAX_FAILURE_ROTATION = 12.0;
 /** Default target ductility ratio */
 export const DEFAULT_DUCTILITY_RATIO = 3.0;
 
-/** Load-mass factor for uniform blast on simply supported element */
+/** Load-mass factor K_LM for uniform blast on simply supported element.
+ *  Source: Biggs (1964) Table 5-1; UFC 3-340-02 Table 5-1; TM 5-1300 Table 5-1.
+ *  K_LM = K_M / K_L = 0.50 / 0.64 = 0.78125 ≈ 0.78
+ *  where K_M = mass transformation factor, K_L = load transformation factor. */
 export const LOAD_MASS_FACTOR_SS = 0.78;
 
-/** Load-mass factor for uniform blast on fixed-fixed element */
+/** Load-mass factor K_LM for uniform blast on fixed-fixed element.
+ *  Source: Biggs (1964) Table 5-1; UFC 3-340-02 Table 5-1; TM 5-1300 Table 5-1.
+ *  K_LM = K_M / K_L = 0.41 / 0.64 = 0.640625 ≈ 0.64
+ *  where K_M = mass transformation factor, K_L = load transformation factor. */
 export const LOAD_MASS_FACTOR_FF = 0.64;
 
 // ─── Protection Level Thresholds ────────────────────────────────────

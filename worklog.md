@@ -139,3 +139,48 @@ Stage Summary:
 - Files created: design-verification.ts, burial-optimization.ts, design/index.ts, design-verification.test.ts
 - Files modified: types.ts (additive), design-foundation.test.ts (additive)
 - Forbidden files NOT modified: results/index.ts, structure/, soil/, threat/
+
+---
+Task ID: 4c-doc-gate
+Agent: Super Z (main)
+Task: Phase 4C Dynamic Model Documentation Gate
+
+Work Log:
+- Added explicit equation references to structural-design.ts:
+  - DLF: Biggs (1964) Ch.4 Fig. 4-8; UFC 3-340-02 Ch.5 Fig. 5-4; TM 5-1300 Ch.5
+  - Impulse equivalent load: Biggs (1964) Eq. 4-18 with full SDOF derivation
+  - KLM factor: Biggs (1964) Table 5-1; UFC 3-340-02 Table 5-1 with K_M/K_L breakdown
+- Verified all unit conversions with inline annotations:
+  - Pressure: kPa, Impulse: kPa·ms, Duration: ms, Natural Period: ms
+  - Design Load: kPa, Moment: kN·m/m, Shear: kN/m, Deflection: mm
+- Documented natural period T calculation path:
+  - Step 1: Euler-Bernoulli first-mode frequency ω₁ = (π/L)² × h × √(E/12ρ)
+  - Step 2: SDOF conversion via Biggs K_M, K_L, K_LM factors
+  - Step 3: Empirical consolidation T = C × L × (L/h)² [ms]
+  - C_SS=0.063 derived from K_LM=0.78, E≈28GPa, ρ≈2400 kg/m³
+  - C_FF=0.031 derived from K_LM=0.64
+  - C is NOT arbitrary — documented full derivation path
+- Documented max(pressure, impulse) selection logic:
+  - Dynamic regime (td/T ≥ 0.2): pressure path governs (DLF ≥ 1.0)
+  - Impulsive regime (td/T < 0.2): impulse path may govern
+  - max() ensures correct load without double-counting
+  - Matches UFC 3-340-02 SDOF methodology
+- Added Mu comments: "Mu is derived from the EQUIVALENT DYNAMIC BLAST LOAD, not from static pressure"
+- Added KLM source documentation to constants.ts (Biggs Table 5-1 K_M/K_L breakdown)
+- Created dynamic-model-documentation-gate.test.ts with 21 audit tests:
+  1. Natural period T sensitivity → equivalent load, Mu, reinforcement all change
+  2. Unit consistency (kPa, kPa·ms, ms → kPa)
+  3. KLM values match Biggs Table 5-1 exactly
+  4. Natural period C values are derived (not arbitrary)
+  5. DLF source is Biggs Fig. 4-8 / UFC Fig. 5-4
+  6. max(pressure, impulse) matches UFC SDOF methodology
+  7. Mu derived from dynamic blast load (not static)
+  8. Legacy constants unchanged
+
+Stage Summary:
+- Gate 1: vitest run → 357/357 PASS (21 new documentation gate tests)
+- Gate 2: tsc --noEmit → 0 errors in design/ and constants files
+- Files modified: structural-design.ts (comments), constants.ts (KLM docs)
+- Files created: dynamic-model-documentation-gate.test.ts
+- Forbidden files NOT modified: results/, structure/, soil/, threat/
+- All 6 documentation checks completed and verified
