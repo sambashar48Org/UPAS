@@ -44,4 +44,33 @@ Work Log:
 Stage Summary:
 - 2 test files modified (calculations.test.ts, regression.test.ts)
 - 0 calculation source files modified (all implementations were already complete)
-- All 165 tests pass: 43 calculations + 18 regression + 30 wave-propagation + 17 pipeline + 11 geometry-bridge + 18 models + 18 units + 10 stores
+- All 165 tests pass: 43 calculations + 18 regression + 30 wave-propagation + 17 pipeline + 11 geometry-bridge + 18 models + 18 units + 10 stores---
+Task ID: 1
+Agent: Super Z (main)
+Task: Phase 4A — Design Foundation
+
+Work Log:
+- Read all existing files: types.ts, constants.ts, materials.json, index.ts, design-input-adapter.ts, existing tests
+- Updated src/calculations/design/types.ts:
+  - Added 'partial_fixity' to DesignCriteria.supportCondition and wallSupportCondition unions
+  - Added maxSupportRotation: number field to DesignCriteria (default 8.0°)
+  - Added steelGrade: number field to DesignCriteria (default 420 MPa)
+  - Added 'partial_fixity' to DesignElementLoad.supportCondition union
+  - Added RebarSelection interface (barDiameter, barArea, spacing, asProvided, numberOfBars)
+  - Added ElementDesignResult interface (full design output per element)
+  - Added DesignResult interface (roof/wall/floor + designStatus + governingElement)
+- Updated src/calculations/types.ts: Added steelGrade?: number to MaterialInput (backward compatible)
+- Updated src/data/materials.json: Added "steelGrade": 420 to all 4 concrete materials
+- Updated src/calculations/index.ts: resolveMaterial() passes steelGrade from JSON (default 420)
+- Updated src/calculations/constants.ts:
+  - Added ACI_DESIGN_FACTORS = { flexure: 0.9, shear: 0.75, compression: 0.65 }
+  - Added maxSupportRotation: 8.0 and steelGrade: 420 to DEFAULT_DESIGN_CRITERIA
+- Updated design-input-adapter.ts: Resolves maxSupportRotation and steelGrade with defaults
+- Created src/__tests__/design/design-foundation.test.ts (22 tests)
+
+Stage Summary:
+- Gate 1: vitest run → 248/248 PASS (exceeds 226+ requirement)
+- Gate 2: tsc --noEmit → ZERO errors in src/calculations/design/
+- 16 pre-existing UI tsc errors confirmed unrelated (PropertiesPanel, ObjectTree, CameraController, ThreatObject3D)
+- No existing files modified except additive changes to types.ts, constants.ts, index.ts, materials.json
+- No design calculation files created (no structural-design.ts, reinforcement-design.ts, etc.)

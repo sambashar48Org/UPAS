@@ -314,6 +314,8 @@ export function buildDesignInput(
     includeSelfWeight: criteria?.includeSelfWeight ?? DEFAULT_DESIGN_CRITERIA.includeSelfWeight,
     includeOverburden: criteria?.includeOverburden ?? DEFAULT_DESIGN_CRITERIA.includeOverburden,
     includeLateralPressure: criteria?.includeLateralPressure ?? DEFAULT_DESIGN_CRITERIA.includeLateralPressure,
+    maxSupportRotation: criteria?.maxSupportRotation ?? DEFAULT_DESIGN_CRITERIA.maxSupportRotation,
+    steelGrade: criteria?.steelGrade ?? DEFAULT_DESIGN_CRITERIA.steelGrade,
   };
 
   // ─── Validate analysis result has required data ───

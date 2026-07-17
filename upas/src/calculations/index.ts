@@ -322,6 +322,7 @@ function resolveMaterial(materialRef: string): MaterialInput {
       yieldStrength: null,
       difCompressive: 1.19,
       difTensile: 1.0,
+      steelGrade: 420,
     };
   }
 
@@ -337,6 +338,7 @@ function resolveMaterial(materialRef: string): MaterialInput {
     yieldStrength: matData.yieldStrength ? safeConvert(matData.yieldStrength, toMPa, 0) : null,
     difCompressive: matData.dynamicIncreaseFactorCompressive ?? 1.19,
     difTensile: matData.dynamicIncreaseFactorTensile ?? 1.0,
+    steelGrade: (matData as any).steelGrade ?? 420,
   };
 }
 

@@ -150,6 +150,10 @@ export interface MaterialInput {
   /** Yield strength fy (MPa) — for steel only */
   yieldStrength: number | null;
 
+  /** Reinforcement steel grade fy (MPa) — a design decision, not a material property.
+   *  Default: 420 MPa (ASTM A615 Grade 60). Used by the design engine. */
+  steelGrade?: number;
+
   // ─── Dynamic properties (from data file) ───
   /** Dynamic Increase Factor for compression */
   difCompressive: number;

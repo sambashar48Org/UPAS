@@ -37,10 +37,10 @@ export interface DesignCriteria {
   allowPlasticResponse: boolean;
 
   /** Support condition for roof and floor slabs (default: 'simply_supported') */
-  supportCondition: 'simply_supported' | 'fixed';
+  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity';
 
   /** Support condition for walls (default: 'fixed' — walls are typically more constrained) */
-  wallSupportCondition: 'simply_supported' | 'fixed';
+  wallSupportCondition: 'simply_supported' | 'fixed' | 'partial_fixity';
 
   /** Reinforcement steel grade */
   reinforcementGrade: ReinforcementGrade;
@@ -65,6 +65,15 @@ export interface DesignCriteria {
 
   /** Include lateral earth pressure on walls (default: true) */
   includeLateralPressure: boolean;
+
+  /** Maximum allowable support rotation θ_max (degrees).
+   *  UFC 3-340-02: 2° elastic, 8° plastic, 12° failure.
+   *  Default: 8.0° (plastic response permitted) */
+  maxSupportRotation: number;
+
+  /** Reinforcement steel yield strength fy (MPa) — flat field for convenience.
+   *  When set, overrides reinforcementGrade.fy. Default: 420 MPa (Grade 60). */
+  steelGrade: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -143,7 +152,7 @@ export interface DesignElementLoad {
   /** Current thickness of this element (m) */
   thickness: number;
   /** Support condition for this specific element */
-  supportCondition: 'simply_supported' | 'fixed';
+  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity';
 
   // ─── Material ───
   /** Material properties for this element */
@@ -257,12 +266,109 @@ export interface DesignInput {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// DESIGN OUTPUT TYPES — Result types for the structural design engine
+// Phase 4A: Type definitions only — no calculation logic here.
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Reinforcement bar selection for one layer of one element.
+ *  Populated by the reinforcement design module (Phase 4C).
+ */
+export interface RebarSelection {
+  /** Selected bar diameter (mm) */
+  barDiameter: number;
+  /** Single bar cross-sectional area (mm²) */
+  barArea: number;
+  /** Bar spacing (mm) */
+  spacing: number;
+  /** Provided steel area per meter width As (mm²/m) */
+  asProvided: number;
+  /** Number of bars within the element width */
+  numberOfBars: number;
+}
+
+/** Design result for a single structural element.
+ *  Populated by the structural design engine (Phase 4B) and
+ *  reinforcement design module (Phase 4C).
+ */
+export interface ElementDesignResult {
+  /** Which structural element */
+  element: 'roof' | 'wall' | 'floor';
+
+  // ─── Thickness ───
+  /** Existing thickness from analysis input (m) */
+  existingThickness: number;
+  /** Minimum required thickness for strength (m) */
+  requiredThickness: number;
+  /** Recommended thickness — rounded up to nearest increment (m) */
+  recommendedThickness: number;
+
+  // ─── Flexure ───
+  /** Design moment Mu (kN·m/m) */
+  designMoment: number;
+  /** Required steel area As_req (mm²/m) */
+  requiredAs: number;
+  /** Provided steel area As_prov (mm²/m) */
+  providedAs: number;
+
+  // ─── Reinforcement ───
+  /** Main (tension) reinforcement selection */
+  mainReinforcement: RebarSelection;
+  /** Distribution (secondary) reinforcement selection */
+  distributionReinforcement: RebarSelection;
+
+  // ─── Shear ───
+  /** Design shear Vu (kN/m) */
+  designShear: number;
+  /** Shear capacity φVn (kN/m) */
+  shearCapacity: number;
+
+  // ─── Deflection ───
+  /** Maximum computed deflection δ (mm) */
+  maxDeflection: number;
+  /** Allowable deflection δ_allow (mm) */
+  allowableDeflection: number;
+
+  // ─── Safety Factors ───
+  /** Flexural safety factor = φMn / Mu */
+  flexuralSafetyFactor: number;
+  /** Shear safety factor = φVn / Vu */
+  shearSafetyFactor: number;
+
+  // ─── Status ───
+  /** Element design status */
+  status: 'pass' | 'fail' | 'optimize';
+
+  // ─── Diagnostics ───
+  /** Design warnings for this element */
+  warnings: string[];
+}
+
+/** Complete design result for all structural elements.
+ *  This is the output of the structural design engine.
+ */
+export interface DesignResult {
+  /** Per-element design results */
+  roof: ElementDesignResult;
+  wall: ElementDesignResult;
+  floor: ElementDesignResult;
+
+  /** Overall design status */
+  designStatus: 'PASS' | 'FAIL' | 'OPTIMIZED';
+
+  /** Governing (weakest) element */
+  governingElement: 'roof' | 'wall' | 'floor';
+
+  /** Global design warnings */
+  warnings: string[];
+
+  /** Design recommendations (Arabic) */
+  recommendations: string[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // ADAPTER WARNING — Diagnostics from the adapter
 // ═══════════════════════════════════════════════════════════════════════
 
-/** Warning generated during DesignInputAdapter transformation.
- *  Indicates missing or questionable data that the design engine should know about.
- */
 export interface DesignInputWarning {
   /** Warning code (e.g. 'NO_PENETRATION_DATA', 'WALL_PRESSURE_APPROXIMATE') */
   code: string;

@@ -268,7 +268,20 @@ export const REBAR_DATABASE: RebarEntry[] = [
   { diameter: 40, designation: 'T40', area: 1256.6, weightPerMeter: 9.864 },
 ] as const;
 
-// ─── ACI 318-19 Strength Reduction Factors ──────────────────────────
+// ─── ACI 318-19 Design Factors (simplified) ────────────────────────
+// Reference: ACI 318-19, Table 21.2.1
+// Simplified version with single compression factor (tied columns)
+
+export const ACI_DESIGN_FACTORS = {
+  /** Flexure and axial tension: φ = 0.90 */
+  flexure: 0.9,
+  /** Shear and torsion: φ = 0.75 */
+  shear: 0.75,
+  /** Compression (tied): φ = 0.65 */
+  compression: 0.65,
+} as const;
+
+// ─── ACI 318-19 Strength Reduction Factors (detailed) ──────────────────
 // φ factors for ultimate strength design
 // Reference: ACI 318-19, Table 21.2.1
 
@@ -359,4 +372,13 @@ export const DEFAULT_DESIGN_CRITERIA = {
 
   /** Include lateral earth pressure on walls */
   includeLateralPressure: true,
+
+  /** Maximum allowable support rotation θ_max (degrees).
+   *  UFC 3-340-02: 2° elastic, 8° plastic, 12° failure.
+   *  Default 8.0° when allowPlasticResponse = true */
+  maxSupportRotation: 8.0,
+
+  /** Reinforcement steel yield strength fy (MPa) — flat field for convenience.
+   *  Default: 420 MPa (ASTM A615 Grade 60) */
+  steelGrade: 420,
 } as const;

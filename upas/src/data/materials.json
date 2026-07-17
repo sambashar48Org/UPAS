@@ -14,7 +14,8 @@
       "poissonRatio": 0.2,
       "yieldStrength": null,
       "dynamicIncreaseFactorCompressive": 1.25,
-      "dynamicIncreaseFactorTensile": 1.0
+      "dynamicIncreaseFactorTensile": 1.0,
+      "steelGrade": 420
     },
     {
       "ref": "rc_300",
@@ -28,7 +29,8 @@
       "poissonRatio": 0.2,
       "yieldStrength": null,
       "dynamicIncreaseFactorCompressive": 1.25,
-      "dynamicIncreaseFactorTensile": 1.0
+      "dynamicIncreaseFactorTensile": 1.0,
+      "steelGrade": 420
     },
     {
       "ref": "rc_350",
@@ -42,7 +44,8 @@
       "poissonRatio": 0.2,
       "yieldStrength": null,
       "dynamicIncreaseFactorCompressive": 1.19,
-      "dynamicIncreaseFactorTensile": 1.0
+      "dynamicIncreaseFactorTensile": 1.0,
+      "steelGrade": 420
     },
     {
       "ref": "rc_400",
@@ -56,7 +59,8 @@
       "poissonRatio": 0.2,
       "yieldStrength": null,
       "dynamicIncreaseFactorCompressive": 1.19,
-      "dynamicIncreaseFactorTensile": 1.0
+      "dynamicIncreaseFactorTensile": 1.0,
+      "steelGrade": 420
     },
     {
       "ref": "steel_s250",
