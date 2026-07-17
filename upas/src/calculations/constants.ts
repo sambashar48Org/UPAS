@@ -229,3 +229,134 @@ export const IMPEDANCE_MISMATCH_WARNING_RATIO = 3.0;
 export const ACI_E_FACTOR = 4700; // Ec = 4700 * sqrt(f'c) in MPa when f'c in psi; SI: Ec = 4700 * sqrt(f'c * 1450) * 0.006895 ≈ 0.043 * sqrt(f'c_MPa) * 1000
 /** Simpler SI formula: Ec (MPa) = 4700 * sqrt(f'c in MPa) — this is the common approximation */
 export const ACI_EC_COEFFICIENT = 4700;
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPRINT 4 PHASE 0: Structural Design Constants
+// These are NOT used by the analysis engine. They exist for the design
+// engine that will consume them in later phases.
+//
+// Reference Standards:
+// - UFC 3-340-02 (Structures to Resist the Effects of Accidental Explosions) — Loads & Response
+// - ACI 318-19 (Building Code Requirements for Structural Concrete) — Reinforcement Design
+// - TM 5-855-1 — Blast & Ground Shock
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Rebar Database (Standard Metric Bars) ─────────────────────────
+// Reference: ACI 318-19, Table 20.2.1
+// Areas are for single bar cross-section
+
+export interface RebarEntry {
+  /** Nominal diameter (mm) */
+  diameter: number;
+  /** Common designation (e.g. "T16") */
+  designation: string;
+  /** Cross-sectional area (mm²) */
+  area: number;
+  /** Linear weight (kg/m) */
+  weightPerMeter: number;
+}
+
+/** Standard reinforcement bar database — sorted by diameter ascending */
+export const REBAR_DATABASE: RebarEntry[] = [
+  { diameter: 10, designation: 'T10', area: 78.5,   weightPerMeter: 0.617 },
+  { diameter: 12, designation: 'T12', area: 113.1,  weightPerMeter: 0.888 },
+  { diameter: 14, designation: 'T14', area: 153.9,  weightPerMeter: 1.208 },
+  { diameter: 16, designation: 'T16', area: 201.1,  weightPerMeter: 1.580 },
+  { diameter: 20, designation: 'T20', area: 314.2,  weightPerMeter: 2.466 },
+  { diameter: 25, designation: 'T25', area: 490.9,  weightPerMeter: 3.853 },
+  { diameter: 32, designation: 'T32', area: 804.2,  weightPerMeter: 6.313 },
+  { diameter: 40, designation: 'T40', area: 1256.6, weightPerMeter: 9.864 },
+] as const;
+
+// ─── ACI 318-19 Strength Reduction Factors ──────────────────────────
+// φ factors for ultimate strength design
+// Reference: ACI 318-19, Table 21.2.1
+
+export const ACI_STRENGTH_REDUCTION_FACTORS = {
+  /** Flexure and axial tension: φ = 0.90 */
+  flexure: 0.90,
+  /** Shear and torsion: φ = 0.75 */
+  shear: 0.75,
+  /** Axial compression with tied reinforcement: φ = 0.65 */
+  compressionTied: 0.65,
+  /** Axial compression with spiral reinforcement: φ = 0.75 */
+  compressionSpiral: 0.75,
+} as const;
+
+// ─── ACI 318-19 Reinforcement Limits ────────────────────────────────
+// Reference: ACI 318-19, Sections 24.4, 7.6
+
+/** Minimum reinforcement ratio ρ_min for flexural members
+ *  ACI 318-19 Eq. 24.4.2.1: ρ_min = max(0.25√f'c/fy, 1.33×ρ_balanced)
+ *  Simplified: ρ_min = 0.25√f'c / fy (for typical f'c/fy ratios)
+ *  This is computed per-design, not stored as a constant.
+ */
+
+/** Maximum reinforcement ratio ρ_max = 0.75 × ρ_balanced (ACI 318-19)
+ *  Computed per-design from: ρ_b = 0.85 × β1 × (f'c/fy) × (87000/(87000+fy))
+ *  β1 = 0.85 for f'c ≤ 28 MPa, reduces by 0.05 per 7 MPa above
+ */
+
+/** Minimum bar spacing for single layer (mm) */
+export const MIN_BAR_SPACING_MM = 75;
+
+/** Maximum bar spacing for flexural reinforcement (mm)
+ *  ACI 318-19: min(3h, 450mm) for slabs — we use 200mm for blast design
+ */
+export const MAX_BAR_SPACING_BLAST_MM = 200;
+
+// ─── UFC 3-340-02 Blast Design Constants ───────────────────────────
+// Reference: UFC 3-340-02, Chapter 5 (Dynamic Analysis)
+
+/** Dynamic Increase Factor (DIF) for reinforcing steel under blast.
+ *  UFC 3-340-02, Section 5.14.3: DIF_s = 1.0 + (0.26 × f_y / 414) ≤ 1.20
+ *  For fy = 420 MPa: DIF ≈ 1.0 + 0.26 × 420/414 = 1.264 → capped at 1.20
+ */
+export function calculateSteelDIF(fy: number): number {
+  const dif = 1.0 + (0.26 * fy) / 414;
+  return Math.min(dif, 1.20);
+}
+
+// ─── Default Design Criteria ───────────────────────────────────────
+// These defaults are used when the user does not specify DesignCriteria.
+
+export const DEFAULT_DESIGN_CRITERIA = {
+  /** Target safety factor — UFC 3-340-02 recommends ≥ 1.2 for containment, ≥ 1.5 for personnel protection */
+  targetSafetyFactor: 1.5,
+
+  /** Allow plastic response — UFC 3-340-02 permits plastic design for blast with controlled ductility */
+  allowPlasticResponse: true,
+
+  /** Default support condition for roof/floor slabs */
+  supportCondition: 'simply_supported' as const,
+
+  /** Default support condition for walls (typically more restrained) */
+  wallSupportCondition: 'fixed' as const,
+
+  /** Default reinforcement grade */
+  reinforcementGrade: {
+    fy: 420,
+    standard: 'ASTM A615 Grade 60',
+  },
+
+  /** Concrete cover for underground structures — larger than buildings due to soil exposure */
+  concreteCover: 0.050, // 50mm
+
+  /** Maximum deflection ratio δ/L — L/360 for typical serviceability */
+  maxDeflectionRatio: 1 / 360,
+
+  /** Thickness search increment — 25mm is the standard construction increment */
+  thicknessIncrement: 0.025,
+
+  /** Maximum thickness to attempt before declaring design failure */
+  maxThickness: 2.0,
+
+  /** Include self-weight in design loads */
+  includeSelfWeight: true,
+
+  /** Include overburden on roof */
+  includeOverburden: true,
+
+  /** Include lateral earth pressure on walls */
+  includeLateralPressure: true,
+} as const;
