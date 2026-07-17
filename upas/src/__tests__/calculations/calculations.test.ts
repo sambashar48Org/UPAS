@@ -45,6 +45,10 @@ function createTestSoilLayers(): SoilLayerInput[] {
       poissonRatio: 0.3,
       waveVelocity: 200,
       category: 'cohesiveless',
+      relativeDensity: 0.3,
+      SPT_NValue: 5,
+      dampingRatio: 0.25,
+      groundShockCoefficients: { legacy: { K: 500, n: 1.5 }, enhanced: { K: 450, n: 1.6 } },
     },
     {
       name: 'Soft Clay',
@@ -58,6 +62,10 @@ function createTestSoilLayers(): SoilLayerInput[] {
       poissonRatio: 0.4,
       waveVelocity: 150,
       category: 'cohesive',
+      relativeDensity: null,
+      SPT_NValue: 3,
+      dampingRatio: 0.30,
+      groundShockCoefficients: { legacy: { K: 200, n: 1.3 }, enhanced: { K: 180, n: 1.35 } },
     },
     {
       name: 'Sound Rock',
@@ -71,6 +79,10 @@ function createTestSoilLayers(): SoilLayerInput[] {
       poissonRatio: 0.2,
       waveVelocity: 3500,
       category: 'rock',
+      relativeDensity: null,
+      SPT_NValue: 100,
+      dampingRatio: 0.05,
+      groundShockCoefficients: { legacy: { K: 700, n: 1.8 }, enhanced: { K: 750, n: 1.82 } },
     },
   ];
 }
@@ -137,6 +149,7 @@ function createTestInput(overrides?: Partial<ProjectInput>): ProjectInput {
       includeSSI: true,
       targetSafetyFactor: 1.4,
       allowPlasticResponse: true,
+      useEnhancedSoilModel: false,
     },
     ...overrides,
   };
@@ -379,7 +392,7 @@ describe('Soil Mechanics Calculations', () => {
       reflectionCoefficient: 2, peakDynamicPressure: 200,
       positivePhaseDuration: 5, positivePhaseImpulse: 1000,
       shockFrontVelocity: 500, arrivalTime: 20,
-      shapeCorrectionFactor: 1.0, groundReflection: 'surface', groundReflectedPressure: null,
+      shapeCorrectionFactor: 1.0, groundReflection: 'none', groundReflectedPressure: null,
     };
     const result = calculateGroundShock(bp, soil, 10);
     expect(result.peakParticleVelocity).toBeGreaterThan(0);
@@ -485,6 +498,10 @@ describe('Structure Resistance Calculations', () => {
       soilAttenuationFactor: 0.3, pressureAtStructure: 150,
       groundShockPPV: 0.5, groundShockArrivalTime: 20,
       averageWaveVelocity: 300, averageUnitWeight: 18,
+      layerTravelTimes: null,
+      impedanceMismatchLosses: null,
+      totalImpedanceTransmission: null,
+      ppvDamageLevel: null,
     };
     const input = createTestInput();
     const responses = getAllStructureResponses(input.structure, bp, ssi);
