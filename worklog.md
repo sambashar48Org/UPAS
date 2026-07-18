@@ -210,3 +210,29 @@ Stage Summary:
 - No penetration formulas moved or altered
 - Backward compatible: all 357 existing tests pass without modification
 
+---
+Task ID: 4e
+Agent: main
+Task: Phase 4E — Design Results Reporting Integration
+
+Work Log:
+- Read report generator architecture (9 sections, generateEngineeringReport → ReportSection[])
+- Identified gap: DesignResult exists in PipelineResult but never reaches report generator
+- Modified generateEngineeringReport() signature to accept optional DesignResult | null
+- Added generateDesignResultsSection() mapping DesignResult → ReportContent[]
+  - Per-element: governing thickness (existing/required/recommended), Mu/Vu, reinforcement (barDia/spacing/As), safety factors, verification status (flexure/shear/penetration/deflection)
+  - Verification summary table (3 elements × 5 checks)
+  - Design warnings list (conditional)
+  - Section severity: success (PASS) / warning (OPTIMIZED) / critical (FAIL)
+- Updated generateReport() wrapper in calculations/index.ts to pass through designResult
+- Reordered pipeline steps 6↔7: design now runs BEFORE report generation
+- Pipeline passes designResult to generateReport() — design section included only when available
+- Fixed Arabic label bug: deflection check was labeled "تحقق الانحناء" (flexure) → "تحقق الانحراف"
+
+Stage Summary:
+- 3 files modified: reports/index.ts, calculations/index.ts, AnalysisPipeline.ts
+- 1 test file created: phase4e-design-report.test.ts (21 tests)
+- 0 frozen modules touched (blast, SDOF, DLF, impulse, DIF, penetration, structural calc)
+- 398 total tests pass (0 regressions)
+- Complete pipeline now: Threat → Blast → Response → Design → Verification → Report
+

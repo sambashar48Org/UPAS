@@ -8,6 +8,7 @@
 
 import type { FullAnalysisResult, EngineeringWarning } from '../types';
 import { formatSafetyFactor, formatProtectionLevel } from '../results';
+import type { DesignResult, ElementDesignResult, ElementVerificationResult } from '../design/types';
 
 // ─── Report Section Types ────────────────────────────────────────────
 
@@ -31,8 +32,14 @@ export type ReportContent =
 /**
  * Generate a complete engineering report from analysis results.
  * Returns structured data ready for rendering.
+ *
+ * @param result       - Complete analysis result
+ * @param designResult - Optional design result — when provided, adds a structural design section
  */
-export function generateEngineeringReport(result: FullAnalysisResult): ReportSection[] {
+export function generateEngineeringReport(
+  result: FullAnalysisResult,
+  designResult?: DesignResult | null,
+): ReportSection[] {
   const sections: ReportSection[] = [];
 
   // 1. Executive Summary
@@ -64,12 +71,17 @@ export function generateEngineeringReport(result: FullAnalysisResult): ReportSec
   // 7. Overall Assessment
   sections.push(generateAssessmentSection(result));
 
-  // 8. Warnings
+  // 8. Structural Design Results (conditional — only when design was executed)
+  if (designResult) {
+    sections.push(generateDesignResultsSection(designResult));
+  }
+
+  // 9. Warnings
   if (result.warnings.length > 0) {
     sections.push(generateWarningsSection(result.warnings));
   }
 
-  // 9. Recommendations
+  // 10. Recommendations
   if (result.recommendations.length > 0) {
     sections.push(generateRecommendationsSection(result.recommendations));
   }
@@ -393,5 +405,160 @@ function generateRecommendationsSection(recommendations: string[]): ReportSectio
         itemsEn: recommendations.map(r => r), // Same for now — English translation can be added later
       },
     ],
+  };
+}
+
+// ─── Section 8: Structural Design Results (Phase 4E) ─────────────────
+
+/**
+ * Generate the structural design results section.
+ * Maps DesignResult → ReportSection with per-element design data.
+ *
+ * Includes: governing thickness, reinforcement selection, Mu/Vu,
+ * verification status (flexure/shear/penetration/deflection), safety factors.
+ */
+function generateDesignResultsSection(design: DesignResult): ReportSection {
+  const content: ReportContent[] = [
+    {
+      type: 'paragraph',
+      textAr: 'نتائج التصميم الإنشائي للعناصر الهيكلية وفق معايير ACI 318-19 و UFC 3-340-02.',
+      textEn: 'Structural design results for structural elements per ACI 318-19 and UFC 3-340-02.',
+    },
+    { type: 'divider' },
+  ];
+
+  // Overall design status
+  const statusAr = design.designStatus === 'PASS' ? 'ناجح'
+    : design.designStatus === 'FAIL' ? 'فاشل' : 'مُحسَّن';
+  const statusEn = design.designStatus;
+
+  const govElemAr = design.governingElement === 'roof' ? 'السقف'
+    : design.governingElement === 'wall' ? 'الجدران' : 'الأرضية';
+
+  content.push(
+    { type: 'key-value', keyAr: 'حالة التصميم', keyEn: 'Design Status', value: statusAr },
+    { type: 'key-value', keyAr: 'العنصر الحاكم', keyEn: 'Governing Element', value: govElemAr },
+  );
+  content.push({ type: 'divider' });
+
+  // Per-element design data
+  const elementLabels: Record<string, { ar: string; en: string }> = {
+    roof: { ar: 'السقف', en: 'Roof' },
+    wall: { ar: 'الجدران', en: 'Wall' },
+    floor: { ar: 'الأرضية', en: 'Floor' },
+  };
+
+  for (const key of ['roof', 'wall', 'floor'] as const) {
+    const labels = elementLabels[key]!;
+    const el: ElementDesignResult = design[key];
+    const ver: ElementVerificationResult = design.verification.elements[key];
+
+    // Element sub-heading
+    content.push({
+      type: 'paragraph',
+      textAr: `── ${labels.ar} ──`,
+      textEn: `── ${labels.en} ──`,
+    });
+
+    // Governing thickness
+    content.push(
+      { type: 'key-value', keyAr: `السماكة الحالية — ${labels.ar}`, keyEn: `Existing Thickness — ${labels.en}`, value: `${(el.existingThickness * 1000).toFixed(0)}`, unit: 'mm' },
+      { type: 'key-value', keyAr: `السماكة المطلوبة — ${labels.ar}`, keyEn: `Required Thickness — ${labels.en}`, value: `${(el.requiredThickness * 1000).toFixed(0)}`, unit: 'mm' },
+      { type: 'key-value', keyAr: `السماكة الموصى بها — ${labels.ar}`, keyEn: `Recommended Thickness — ${labels.en}`, value: `${(el.recommendedThickness * 1000).toFixed(0)}`, unit: 'mm' },
+    );
+
+    // Mu / Vu
+    content.push(
+      { type: 'key-value', keyAr: `عزم الانحناء التصميمي — ${labels.ar}`, keyEn: `Design Moment — ${labels.en}`, value: `${el.designMoment.toFixed(2)}`, unit: 'kN·m/m' },
+      { type: 'key-value', keyAr: `قوة القص التصميمية — ${labels.ar}`, keyEn: `Design Shear — ${labels.en}`, value: `${el.designShear.toFixed(2)}`, unit: 'kN/m' },
+    );
+
+    // Reinforcement selection
+    content.push(
+      { type: 'key-value', keyAr: `قطر التسليح الرئيسي — ${labels.ar}`, keyEn: `Main Bar Diameter — ${labels.en}`, value: `${el.mainReinforcement.barDiameter}`, unit: 'mm' },
+      { type: 'key-value', keyAr: `مسافة التسليح الرئيسي — ${labels.ar}`, keyEn: `Main Bar Spacing — ${labels.en}`, value: `${el.mainReinforcement.spacing}`, unit: 'mm' },
+      { type: 'key-value', keyAr: `المساحة المقدمة — ${labels.ar}`, keyEn: `As Provided — ${labels.en}`, value: `${el.mainReinforcement.asProvided.toFixed(1)}`, unit: 'mm²/m' },
+      { type: 'key-value', keyAr: `المساحة المطلوبة — ${labels.ar}`, keyEn: `As Required — ${labels.en}`, value: `${el.requiredAs.toFixed(1)}`, unit: 'mm²/m' },
+    );
+
+    // Safety factors
+    content.push(
+      { type: 'key-value', keyAr: `معامل أمان الانحناء — ${labels.ar}`, keyEn: `Flexural SF — ${labels.en}`, value: formatSafetyFactor(el.flexuralSafetyFactor) },
+      { type: 'key-value', keyAr: `معامل أمان القص — ${labels.ar}`, keyEn: `Shear SF — ${labels.en}`, value: formatSafetyFactor(el.shearSafetyFactor) },
+    );
+
+    // Verification status
+    const flexAr = ver.flexuralPass ? 'ناجح' : 'فاشل';
+    const shearAr = ver.shearPass ? 'ناجح' : 'فاشل';
+    const penAr = ver.penetrationPass ? 'ناجح' : 'فاشل';
+    const deflAr = ver.deflectionPass ? 'ناجح' : 'فاشل';
+
+    content.push(
+      { type: 'key-value', keyAr: `تحقق الانحناء — ${labels.ar}`, keyEn: `Flexure Check — ${labels.en}`, value: flexAr },
+      { type: 'key-value', keyAr: `تحقق القص — ${labels.ar}`, keyEn: `Shear Check — ${labels.en}`, value: shearAr },
+      { type: 'key-value', keyAr: `تحقق الاختراق — ${labels.ar}`, keyEn: `Penetration Check — ${labels.en}`, value: penAr },
+      { type: 'key-value', keyAr: `تحقق الانحراف — ${labels.ar}`, keyEn: `Deflection Check — ${labels.en}`, value: deflAr },
+    );
+
+    // Element status
+    const elStatusAr = el.status === 'pass' ? 'ناجح'
+      : el.status === 'fail' ? 'فاشل' : 'يحتاج تحسين';
+    content.push(
+      { type: 'key-value', keyAr: `حالة العنصر — ${labels.ar}`, keyEn: `Element Status — ${labels.en}`, value: elStatusAr },
+    );
+
+    content.push({ type: 'divider' });
+  }
+
+  // Remove trailing divider
+  if (content.length > 0 && content[content.length - 1]?.type === 'divider') {
+    content.pop();
+  }
+
+  // Verification summary table
+  const verTableHeaders = ['العنصر / Element', 'انحناء / Flexure', 'قص / Shear', 'اختراق / Penetration', 'انحناء / Deflection', 'إجمالي / Overall'];
+  const verTableRows = (['roof', 'wall', 'floor'] as const).map(key => {
+    const labels = elementLabels[key]!;
+    const v = design.verification.elements[key];
+    return [
+      `${labels.ar} / ${labels.en}`,
+      v.flexuralPass ? 'PASS' : 'FAIL',
+      v.shearPass ? 'PASS' : 'FAIL',
+      v.penetrationPass ? 'PASS' : 'FAIL',
+      v.deflectionPass ? 'PASS' : 'FAIL',
+      v.overallPass ? 'PASS' : 'FAIL',
+    ];
+  });
+
+  content.push({
+    type: 'table',
+    headers: verTableHeaders,
+    rows: verTableRows,
+    captionAr: 'ملخص التحقق من التصميم لجميع العناصر',
+    captionEn: 'Design verification summary for all elements',
+  });
+
+  // Design warnings (if any)
+  if (design.warnings.length > 0) {
+    content.push({ type: 'divider' });
+    content.push({
+      type: 'list',
+      itemsAr: design.warnings,
+      itemsEn: design.warnings,
+    });
+  }
+
+  const severity = design.designStatus === 'PASS'
+    ? 'success'
+    : design.designStatus === 'FAIL'
+      ? 'critical'
+      : 'warning';
+
+  return {
+    id: 'structural-design',
+    titleAr: 'نتائج التصميم الإنشائي',
+    titleEn: 'Structural Design Results',
+    severity,
+    content,
   };
 }

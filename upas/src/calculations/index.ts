@@ -136,9 +136,15 @@ export function runAnalysisFromInput(input: ProjectInput): FullAnalysisResult {
 /**
  * Generate an engineering report from analysis results.
  * Returns structured data for rendering.
+ *
+ * @param result       - Complete analysis result
+ * @param designResult - Optional design result — when provided, includes design section
  */
-export function generateReport(result: FullAnalysisResult): ReportSection[] {
-  return generateEngineeringReport(result);
+export function generateReport(
+  result: FullAnalysisResult,
+  designResult?: import('./design/types').DesignResult | null,
+): ReportSection[] {
+  return generateEngineeringReport(result, designResult);
 }
 
 /**

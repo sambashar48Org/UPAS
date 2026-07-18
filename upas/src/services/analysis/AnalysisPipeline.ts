@@ -106,10 +106,7 @@ export function executeAnalysis(input: PipelineInput): PipelineResult {
   // 5. Convert to domain model for storage
   const domainResult = toDomainResult(fullResult);
 
-  // 6. Generate engineering report
-  const report = generateReport(fullResult);
-
-  // 7. Structural Design (optional — only when designCriteria provided)
+  // 6. Structural Design (optional — only when designCriteria provided)
   let designResult: DesignResult | null = null;
   if (input.designCriteria) {
     try {
@@ -122,13 +119,16 @@ export function executeAnalysis(input: PipelineInput): PipelineResult {
         success: true,
         fullResult,
         domainResult,
-        report,
+        report: generateReport(fullResult, null), // Report without design
         designResult: null,
         errors: [designErrorMsg],
         validationErrors: [],
       };
     }
   }
+
+  // 7. Generate engineering report (after design — so design section can be included)
+  const report = generateReport(fullResult, designResult);
 
   return {
     success: true,
