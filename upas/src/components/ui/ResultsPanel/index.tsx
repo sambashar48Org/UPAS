@@ -8,9 +8,11 @@ import { useProjectStore } from '../../../stores/projectStore';
 import { buildResultViewModel } from '../../../visualization';
 import { StructureResponseCard, PenetrationCard, ResultRow } from './ResultCard';
 import WarningList from './WarningList';
+import type { ElementDesignResult, ElementVerificationResult } from '../../../calculations/design/types';
 
 export default function ResultsPanel() {
   const lastFullResult = useProjectStore((s) => s.lastFullResult);
+  const lastDesignResult = useProjectStore((s) => s.lastDesignResult);
 
   const vm = useMemo(() => {
     if (!lastFullResult) return null;
@@ -107,6 +109,106 @@ export default function ResultsPanel() {
               <PenetrationCard key={p.element} pen={p} />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ─── Design Results (Phase 4F) ──────────── */}
+      {lastDesignResult && (
+        <div>
+          <h4 className="text-[11px] font-bold mb-1.5 pb-1 border-b" style={{ color: 'var(--upas-text-secondary)', borderColor: 'var(--upas-border)' }}>
+            نتائج التصميم الإنشائي
+          </h4>
+
+          {/* Design status badge */}
+          <div
+            className="border rounded-lg p-2 mb-2"
+            style={{
+              borderColor: lastDesignResult.designStatus === 'PASS' ? '#22c55e'
+                : lastDesignResult.designStatus === 'FAIL' ? '#dc2626' : '#f59e0b',
+              backgroundColor: (lastDesignResult.designStatus === 'PASS' ? '#22c55e'
+                : lastDesignResult.designStatus === 'FAIL' ? '#dc2626' : '#f59e0b') + '08',
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold" style={{
+                color: lastDesignResult.designStatus === 'PASS' ? '#22c55e'
+                  : lastDesignResult.designStatus === 'FAIL' ? '#dc2626' : '#f59e0b',
+              }}>
+                {lastDesignResult.designStatus === 'PASS' ? 'التصميم ناجح' : lastDesignResult.designStatus === 'FAIL' ? 'التصميم فاشل' : 'يحتاج تحسين'}
+              </span>
+              <span className="text-[10px]" style={{ color: 'var(--upas-text-secondary)' }}>
+                العنصر الحاكم: {
+                  lastDesignResult.governingElement === 'roof' ? 'السقف'
+                    : lastDesignResult.governingElement === 'wall' ? 'الجدران' : 'الأرضية'
+                }
+              </span>
+            </div>
+          </div>
+
+          {/* Per-element design cards */}
+          {(['roof', 'wall', 'floor'] as const).map((elemKey) => {
+            const el: ElementDesignResult = lastDesignResult[elemKey];
+            const ver: ElementVerificationResult = lastDesignResult.verification.elements[elemKey];
+            const elemLabel = elemKey === 'roof' ? 'السقف' : elemKey === 'wall' ? 'الجدران' : 'الأرضية';
+            const statusColor = el.status === 'pass' ? '#22c55e' : el.status === 'fail' ? '#dc2626' : '#f59e0b';
+
+            return (
+              <div key={elemKey} className="border rounded p-2 mb-2" style={{ borderColor: 'var(--upas-border)' }}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-bold" style={{ color: statusColor }}>{elemLabel}</span>
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                    style={{ backgroundColor: statusColor + '20', color: statusColor }}
+                  >
+                    {ver.overallPass ? 'ناجح' : 'فاشل'}
+                  </span>
+                </div>
+
+                {/* Thickness */}
+                <ResultRow label="السماكة الحالية" value={`${(el.existingThickness * 1000).toFixed(0)}`} unit="mm" />
+                <ResultRow label="السماكة المطلوبة" value={`${(el.requiredThickness * 1000).toFixed(0)}`} unit="mm"
+                  color={el.existingThickness >= el.requiredThickness ? '#22c55e' : '#dc2626'} />
+                <ResultRow label="السماكة الموصى بها" value={`${(el.recommendedThickness * 1000).toFixed(0)}`} unit="mm" />
+
+                {/* Mu / Vu */}
+                <ResultRow label="عزم الانحناء Mu" value={el.designMoment.toFixed(2)} unit="kN·m/m" />
+                <ResultRow label="قوة القص Vu" value={el.designShear.toFixed(2)} unit="kN/m" />
+
+                {/* Reinforcement */}
+                <ResultRow label="التسليح الرئيسي" value={`${el.mainReinforcement.barDiameter}mm @ ${el.mainReinforcement.spacing}mm`} />
+                <ResultRow label="As المقدمة" value={el.mainReinforcement.asProvided.toFixed(0)} unit="mm²/m" />
+                <ResultRow label="As المطلوبة" value={el.requiredAs.toFixed(0)} unit="mm²/m"
+                  color={el.mainReinforcement.asProvided >= el.requiredAs ? '#22c55e' : '#dc2626'} />
+
+                {/* Safety Factors */}
+                <ResultRow label="معامل أمان الانحناء" value={el.flexuralSafetyFactor.toFixed(2)}
+                  color={el.flexuralSafetyFactor >= 1.0 ? '#22c55e' : '#dc2626'} />
+                <ResultRow label="معامل أمان القص" value={el.shearSafetyFactor.toFixed(2)}
+                  color={el.shearSafetyFactor >= 1.0 ? '#22c55e' : '#dc2626'} />
+
+                {/* Verification checks */}
+                <div className="flex gap-2 mt-1">
+                  {([
+                    { label: 'انحناء', pass: ver.flexuralPass },
+                    { label: 'قص', pass: ver.shearPass },
+                    { label: 'اختراق', pass: ver.penetrationPass },
+                    { label: 'انحراف', pass: ver.deflectionPass },
+                  ] as const).map((check) => (
+                    <span
+                      key={check.label}
+                      className="text-[9px] px-1 py-0.5 rounded"
+                      style={{
+                        backgroundColor: check.pass ? '#22c55e20' : '#dc262620',
+                        color: check.pass ? '#22c55e' : '#dc2626',
+                      }}
+                    >
+                      {check.label}: {check.pass ? 'OK' : 'FAIL'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

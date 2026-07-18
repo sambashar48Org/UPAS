@@ -13,6 +13,7 @@ import type { Structure } from '../models/Structure';
 import type { AnalysisResult } from '../models/AnalysisResult';
 import type { FullAnalysisResult } from '../calculations/types';
 import type { ReportSection } from '../calculations/reports';
+import type { DesignResult, DesignCriteria } from '../calculations/design/types';
 import type { VisualizationSettings } from '../models/VisualizationSettings';
 import { createProject } from '../models/Project';
 import { createVisualizationSettings } from '../models/VisualizationSettings';
@@ -35,6 +36,11 @@ interface ProjectState {
   lastFullResult: FullAnalysisResult | null;
   lastReport: ReportSection[] | null;
   analysisError: string | null;
+
+  // Phase 4F: Design state
+  designEnabled: boolean;
+  designCriteria: Partial<DesignCriteria>;
+  lastDesignResult: DesignResult | null;
 
   // Project list (for dashboard)
   projects: Project[];
@@ -69,6 +75,11 @@ interface ProjectState {
   setLastReport: (report: ReportSection[] | null) => void;
   setAnalysisError: (err: string | null) => void;
 
+  // Phase 4F: Design actions
+  setDesignEnabled: (enabled: boolean) => void;
+  setDesignCriteria: (criteria: Partial<DesignCriteria>) => void;
+  setLastDesignResult: (result: DesignResult | null) => void;
+
   resetProjectState: () => void;
 }
 
@@ -87,6 +98,11 @@ const initialState = {
   lastFullResult: null as FullAnalysisResult | null,
   lastReport: null as ReportSection[] | null,
   analysisError: null as string | null,
+
+  // Phase 4F: Design (disabled by default — backward compatible)
+  designEnabled: false,
+  designCriteria: {},
+  lastDesignResult: null as DesignResult | null,
 
   projects: [] as Project[],
 };
@@ -150,5 +166,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   setLastReport: (report) => set({ lastReport: report }),
   setAnalysisError: (err) => set({ analysisError: err }),
 
-  resetProjectState: () => set(initialState),
+  setDesignEnabled: (enabled) => set({ designEnabled: enabled }),
+  setDesignCriteria: (criteria) => set((s) => ({ designCriteria: { ...s.designCriteria, ...criteria } })),
+  setLastDesignResult: (result) => set({ lastDesignResult: result }),
+
+  resetProjectState: () => set({ ...initialState, designEnabled: false, designCriteria: {}, lastDesignResult: null }),
 }));

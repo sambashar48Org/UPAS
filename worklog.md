@@ -236,3 +236,26 @@ Stage Summary:
 - 398 total tests pass (0 regressions)
 - Complete pipeline now: Threat → Blast → Response → Design → Verification → Report
 
+---
+Task ID: 4f
+Agent: main
+Task: Phase 4F — Design User Interface Integration
+
+Work Log:
+- Reviewed complete UI architecture: stores, hooks, forms, panels, routing
+- Added to projectStore: designEnabled (bool), designCriteria (Partial<DesignCriteria>), lastDesignResult (DesignResult|null), 3 actions
+- Created DesignCriteriaForm.tsx: enable toggle, steel grade selector, safety factor, support conditions, concrete cover, max rotation, design toggles (plastic/self-weight/overburden/lateral)
+- Extended InputSubTabs with 4th tab "التصميم" (Design)
+- Updated AnalysisView to import and render DesignCriteriaForm
+- Wired useAnalysisPipeline hook: reads designEnabled + designCriteria from store, passes to executeAnalysis() only when enabled and non-empty, stores designResult
+- Added design results visualization to ResultsPanel: status badge, per-element cards (thickness, Mu/Vu, reinforcement, SF, verification badges)
+- Store setDesignCriteria merges (not replaces) for UI incremental updates
+
+Stage Summary:
+- 5 files modified: projectStore.ts, InputForm/index.tsx, AnalysisView/index.tsx, useAnalysisPipeline.ts, ResultsPanel/index.tsx
+- 1 component created: DesignCriteriaForm.tsx
+- 1 test file created: phase4f-design-ui.test.ts (19 tests)
+- 0 frozen modules touched
+- 417 total tests pass (0 regressions)
+- Backward compatible: designEnabled=false (default) = exact old workflow
+

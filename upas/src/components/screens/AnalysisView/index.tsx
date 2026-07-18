@@ -14,6 +14,7 @@ import InputForm, { InputSubTabs } from '../../ui/InputForm';
 import SoilForm from '../../ui/InputForm/SoilForm';
 import StructureForm from '../../ui/InputForm/StructureForm';
 import ThreatForm from '../../ui/InputForm/ThreatForm';
+import DesignCriteriaForm from '../../ui/InputForm/DesignCriteriaForm';
 import ResultsPanel from '../../ui/ResultsPanel';
 import ReportViewer from '../../ui/ReportViewer';
 
@@ -34,7 +35,7 @@ export default function AnalysisView() {
   const visualizationMode = useUIStore((s) => s.visualizationMode);
 
   const demoLoaded = useRef<string | null>(null);
-  const [inputSubTab, setInputSubTab] = useState<'soil' | 'structure' | 'threat'>('soil');
+  const [inputSubTab, setInputSubTab] = useState<'soil' | 'structure' | 'threat' | 'design'>('soil');
 
   // Load demo project data on first mount
   useEffect(() => {
@@ -89,6 +90,7 @@ export default function AnalysisView() {
             {inputSubTab === 'soil' && <SoilForm />}
             {inputSubTab === 'structure' && <StructureForm />}
             {inputSubTab === 'threat' && <ThreatForm />}
+            {inputSubTab === 'design' && <DesignCriteriaForm />}
           </div>
         </div>
       );

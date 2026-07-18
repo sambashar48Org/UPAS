@@ -55,12 +55,13 @@ export default function InputForm({ children }: { children?: React.ReactNode }) 
   );
 }
 
-/** Sub-tab bar for Input tab (Soil/Structure/Threat) */
-export function InputSubTabs({ active, onChange }: { active: 'soil' | 'structure' | 'threat'; onChange: (v: 'soil' | 'structure' | 'threat') => void }) {
-  const items: Array<{ key: 'soil' | 'structure' | 'threat'; label: string }> = [
+/** Sub-tab bar for Input tab (Soil/Structure/Threat/Design) */
+export function InputSubTabs({ active, onChange }: { active: 'soil' | 'structure' | 'threat' | 'design'; onChange: (v: 'soil' | 'structure' | 'threat' | 'design') => void }) {
+  const items: Array<{ key: 'soil' | 'structure' | 'threat' | 'design'; label: string }> = [
     { key: 'soil', label: 'التربة' },
     { key: 'structure', label: 'المنشأ' },
     { key: 'threat', label: 'التهديد' },
+    { key: 'design', label: 'التصميم' },
   ];
 
   return (

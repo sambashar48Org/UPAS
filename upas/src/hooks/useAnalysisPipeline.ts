@@ -27,6 +27,9 @@ export function useAnalysisPipeline() {
   const toggleThreatObject = useUIStore((s) => s.toggleThreatObject);
   const toggleDamageZones = useUIStore((s) => s.toggleDamageZones);
   const addNotification = useUIStore((s) => s.addNotification);
+  const designEnabled = useProjectStore((s) => s.designEnabled);
+  const designCriteria = useProjectStore((s) => s.designCriteria);
+  const setLastDesignResult = useProjectStore((s) => s.setLastDesignResult);
 
   const runAnalysis = useCallback(async (): Promise<PipelineResult> => {
     // Pre-checks
@@ -53,13 +56,20 @@ export function useAnalysisPipeline() {
       // Use setTimeout to allow UI to update before heavy computation
       const result = await new Promise<PipelineResult>((resolve) => {
         setTimeout(() => {
-          resolve(executeAnalysis({ project, soilProfile, structure, threat, bomb }));
+          resolve(executeAnalysis({
+            project, soilProfile, structure, threat, bomb,
+            // Phase 4F: pass design criteria only when enabled
+            designCriteria: designEnabled && Object.keys(designCriteria).length > 0
+              ? designCriteria
+              : undefined,
+          }));
         }, 50);
       });
 
       if (result.success && result.fullResult && result.domainResult && result.report) {
         setLastFullResult(result.fullResult);
         setLastReport(result.report);
+        setLastDesignResult(result.designResult); // Phase 4F: store design result
         addAnalysisResult(result.domainResult);
         setAnalysisTab('results');
         toggleThreatObject(); // enable threat visualization
@@ -80,7 +90,7 @@ export function useAnalysisPipeline() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [project, soilProfile, structure, threats, bombs, setIsAnalyzing, setLastFullResult, setLastReport, setAnalysisError, addAnalysisResult, setAnalysisTab, toggleThreatObject, toggleDamageZones, addNotification]);
+  }, [project, soilProfile, structure, threats, bombs, designEnabled, designCriteria, setIsAnalyzing, setLastFullResult, setLastReport, setAnalysisError, setLastDesignResult, addAnalysisResult, setAnalysisTab, toggleThreatObject, toggleDamageZones, addNotification]);
 
   return { runAnalysis };
 }
