@@ -28,6 +28,8 @@ import {
   type FullAnalysisResult,
 } from '../../calculations';
 import type { ReportSection } from '../../calculations/reports';
+import { runDesignCalculation } from '../../calculations/design';
+import type { DesignCriteria, DesignResult } from '../../calculations/design';
 
 // ─── Pipeline Input ──────────────────────────────────────────────
 export interface PipelineInput {
@@ -37,6 +39,8 @@ export interface PipelineInput {
   threat: Threat;
   bomb: Bomb;
   settings?: AnalysisSettings;
+  /** Optional design criteria — when provided, runs structural design after analysis */
+  designCriteria?: Partial<DesignCriteria>;
 }
 
 // ─── Pipeline Output ─────────────────────────────────────────────
@@ -45,6 +49,8 @@ export interface PipelineResult {
   fullResult: FullAnalysisResult | null;
   domainResult: AnalysisResult | null;
   report: ReportSection[] | null;
+  /** Structural design result — present only when designCriteria was provided */
+  designResult: DesignResult | null;
   errors: string[];
   validationErrors: Array<{ field: string; message: string; code: string }>;
 }
@@ -103,11 +109,33 @@ export function executeAnalysis(input: PipelineInput): PipelineResult {
   // 6. Generate engineering report
   const report = generateReport(fullResult);
 
+  // 7. Structural Design (optional — only when designCriteria provided)
+  let designResult: DesignResult | null = null;
+  if (input.designCriteria) {
+    try {
+      designResult = runDesignCalculation(fullResult, input.designCriteria);
+    } catch (err) {
+      // Design failure does not fail the pipeline — analysis results are still valid.
+      // The design error is reported but the pipeline succeeds.
+      const designErrorMsg = `خطأ في التصميم الإنشائي: ${err instanceof Error ? err.message : String(err)}`;
+      return {
+        success: true,
+        fullResult,
+        domainResult,
+        report,
+        designResult: null,
+        errors: [designErrorMsg],
+        validationErrors: [],
+      };
+    }
+  }
+
   return {
     success: true,
     fullResult,
     domainResult,
     report,
+    designResult,
     errors: [],
     validationErrors: [],
   };
@@ -120,6 +148,7 @@ function failResult(validationErrors: Array<{ field: string; message: string; co
     fullResult: null,
     domainResult: null,
     report: null,
+    designResult: null,
     errors: ['فشل التحقق من صحة المدخلات'],
     validationErrors,
   };

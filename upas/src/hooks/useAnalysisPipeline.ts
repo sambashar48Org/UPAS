@@ -34,7 +34,7 @@ export function useAnalysisPipeline() {
       const msg = 'بيانات غير مكتملة: يتطلب مشروع + تربة + منشأ';
       setAnalysisError(msg);
       addNotification(msg, 'error');
-      return { success: false, fullResult: null, domainResult: null, report: null, errors: [msg], validationErrors: [] };
+      return { success: false, fullResult: null, domainResult: null, report: null, designResult: null, errors: [msg], validationErrors: [] };
     }
 
     const threat = threats[0];
@@ -43,7 +43,7 @@ export function useAnalysisPipeline() {
       const msg = 'بيانات غير مكتملة: يتطلب تهديد + متفجرات';
       setAnalysisError(msg);
       addNotification(msg, 'error');
-      return { success: false, fullResult: null, domainResult: null, report: null, errors: [msg], validationErrors: [] };
+      return { success: false, fullResult: null, domainResult: null, report: null, designResult: null, errors: [msg], validationErrors: [] };
     }
 
     setIsAnalyzing(true);
@@ -76,7 +76,7 @@ export function useAnalysisPipeline() {
       const msg = `خطأ غير متوقع: ${err instanceof Error ? err.message : String(err)}`;
       setAnalysisError(msg);
       addNotification(msg, 'error');
-      return { success: false, fullResult: null, domainResult: null, report: null, errors: [msg], validationErrors: [] };
+      return { success: false, fullResult: null, domainResult: null, report: null, designResult: null, errors: [msg], validationErrors: [] };
     } finally {
       setIsAnalyzing(false);
     }
