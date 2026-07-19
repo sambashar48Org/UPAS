@@ -137,3 +137,18 @@ export type {
 // Re-export burial optimization
 export { optimizeBurialDepth } from './burial-optimization';
 export { computeSoilAttenuationFactor } from './burial-optimization';
+
+// ─── Phase 5B: Professional Engineering Review Package ──────────────
+export { EQUATION_REGISTRY, getEquationsByCategory, getEquationById, getEquationsByFile, getFrozenEquations, getEquationCategories, getEquationIdSet } from './equation-registry';
+export type { EquationEntry, EquationCategory } from './equation-registry';
+
+export { DESIGN_ASSUMPTIONS, getAssumptionsByCategory, getAssumptionsByImpact, getAssumptionById, getFrozenAssumptions, getAssumptionCategories } from './design-assumptions';
+export type { DesignAssumption, AssumptionImpact, AssumptionCategory } from './design-assumptions';
+
+export { generateCalculationTraceReport, generateElementTraceSheet } from './calculation-trace-report';
+
+export { generateAuditPackage, getAuditPackageSections, getAuditPackageSummary } from './audit-export';
+export type { AuditDocument, AuditPackage } from './audit-export';
+
+export { BENCHMARK_CASES, populateBenchmarkBaselines, validateBenchmarkResult } from './benchmarks';
+export type { BenchmarkCase, BenchmarkExpectedResult, BenchmarkElementExpectation } from './benchmarks';
