@@ -1,0 +1,835 @@
+     1→     1→/**
+     2→     2→ * UPAS — Structural Design Engine (Core)
+     3→     3→ * Phase 4B: Structural Design Core
+     4→     4→ *
+     5→     5→ * Computes structural design for RC elements under blast loading.
+     6→     6→ * This module performs:
+     7→     7→ *   1. Design load calculation (blast + static) per element
+     8→     8→ *   2. Moment and shear demand
+     9→     9→ *   3. Iterative thickness search (existing → +25 mm → PASS/FAIL)
+    10→    10→ *   4. Per-element design result assembly
+    11→    11→ *
+    12→    12→ * ─────────────────────────────────────────────────────────────────────
+    13→    13→ * DYNAMIC BLAST DESIGN — NOT STATIC
+    14→    14→ * ─────────────────────────────────────────────────────────────────────
+    15→    15→ * This module implements DYNAMIC blast design per UFC 3-340-02 Ch.5.
+    16→    16→ * The design moment Mu is NOT a static calculation from peak pressure alone.
+    17→    17→ *
+    18→    18→ * Load path:
+    19→    19→ *   Peak Pressure (kPa) + Impulse (kPa·ms) + Duration (ms)
+    20→    20→ *       ↓
+    21→    21→ *   Natural Period T (ms) — from element geometry & material
+    22→    22→ *       ↓
+    23→    23→ *   Dual-Path Dynamic Response:
+    24→    24→ *     Path 1 (Pressure):  w₁ = P_peak × DLF(td/T)          [Biggs SDOF]
+    25→    25→ *     Path 2 (Impulse):   w₂ = 2π × I / (T × KLM)        [SDOF impulse]
+    26→    26→ *     w_blast = max(w₁, w₂)                              [UFC 3-340-02]
+    27→    27→ *       ↓
+    28→    28→ *   w_total = w_blast + staticPressure (NOT multiplied by DLF)
+    29→    29→ *       ↓
+    30→    30→ *   Mu = w_total × L² / C  (moment coefficient per support)
+    31→    31→ *
+    32→    32→ * ALL four dynamic parameters affect results:
+    33→    33→ *   positivePhaseImpulse, positivePhaseDuration, naturalPeriod, KLM.
+    34→    34→ *
+    35→    35→ * ─────────────────────────────────────────────────────────────────────
+    36→    36→ * UNIT CONVENTIONS
+    37→    37→ * ─────────────────────────────────────────────────────────────────────
+    38→    38→ *   Pressure:         kPa  (kilopascals)
+    39→    39→ *   Impulse:          kPa·ms  (kilopascal-milliseconds)
+    40→    40→ *   Duration:         ms   (milliseconds)
+    41→    41→ *   Natural Period:   ms   (milliseconds)
+    42→    42→ *   Design Load w:    kPa  (= kN/m², equivalent pressure)
+    43→    43→ *   Moment Mu:        kN·m per meter width
+    44→    44→ *   Shear Vu:         kN/m
+    45→    45→ *   Deflection:       mm
+    46→    46→ *
+    47→    47→ * ─────────────────────────────────────────────────────────────────────
+    48→    48→ * ARCHITECTURE RULE — Design Input Contract
+    49→    49→ * ─────────────────────────────────────────────────────────────────────
+    50→    50→ * This module reads ONLY:
+    51→    51→ *   • design/types.ts  (DesignInput, DesignElementLoad, DesignCriteria, …)
+    52→    52→ *   • calculations/constants  (ACI_DESIGN_FACTORS, calculateSteelDIF, GRAVITY)
+    53→    53→ *   • design/reinforcement-design.ts  (pure calculation helpers)
+    54→    54→ *
+    55→    55→ * This module NEVER imports from:
+    56→    56→ *   ❌ calculations/types.ts  (analysis types)
+    57→    57→ *   ❌ calculations/results/
+    58→    58→ *   ❌ calculations/structure/
+    59→    59→ *   ❌ calculations/soil/
+    60→    60→ *   ❌ calculations/threat/
+    61→    61→ *
+    62→    62→ * All blast parameters come from DesignInput.blast (DesignBlastInput).
+    63→    63→ * No blast equations are recalculated. No KB polynomials. No TNT conversion.
+    64→    64→ * No threat engine. No blast engine.
+    65→    65→ *
+    66→    66→ * Reference Standards:
+    67→    67→ * - UFC 3-340-02  (Loads & Response, Dynamic Analysis)
+    68→    68→ * - ACI 318-19    (Reinforcement Design)
+    69→    69→ * - TM 5-855-1    (Blast & Ground Shock)
+    70→    70→ * - Biggs, J.M.  (1964) "Introduction to Structural Dynamics"
+    71→    71→ */
+    72→    72→
+    73→    73→import type {
+    74→    74→  DesignInput,
+    75→    75→  DesignElementLoad,
+    76→    76→  DesignCriteria,
+    77→    77→  DesignBlastInput,
+    78→    78→  DesignPenetrationData,
+    79→    79→  ElementDesignResult,
+    80→    80→} from './types';
+    81→    81→
+    82→    82→import { ACI_DESIGN_FACTORS, calculateSteelDIF, GRAVITY, LOAD_MASS_FACTOR_SS, LOAD_MASS_FACTOR_FF } from '../constants';
+    83→    83→
+    84→    84→import {
+    85→    85→  calculateEffectiveDepth,
+    86→    86→  calculateRequiredAs,
+    87→    87→  calculateFlexuralCapacity,
+    88→    88→  calculateShearCapacity,
+    89→    89→  selectReinforcement,
+    90→    90→  selectDistributionReinforcement,
+    91→    91→} from './reinforcement-design';
+    92→    92→
+    93→    93→// ═══════════════════════════════════════════════════════════════════════
+    94→    94→// LOAD DISTRIBUTION CONSTANTS
+    95→    95→// ═══════════════════════════════════════════════════════════════════════
+    96→    96→
+    97→    97→/** Wall blast pressure distribution factor.
+    98→    98→ *  Reference: TM 5-1300 / UFC 3-340-02 Ch.5 — lateral pressure reduction. */
+    99→    99→const WALL_BLAST_FACTOR = 0.70;
+   100→   100→
+   101→   101→// ═══════════════════════════════════════════════════════════════════════
+   102→   102→// MOMENT COEFFICIENTS — uniform load, one-way spanning element
+   103→   103→// ═══════════════════════════════════════════════════════════════════════
+   104→   104→
+   105→   105→const MOMENT_COEFFICIENTS: Record<string, number> = {
+   106→   106→  simply_supported: 8,    // Mu = wL² / 8
+   107→   107→  fixed: 12,              // Mu = wL² / 12
+   108→   108→  partial_fixity: 10,     // Mu = wL² / 10  (documented intermediate)
+   109→   109→} as const;
+   110→   110→
+   111→   111→// ═══════════════════════════════════════════════════════════════════════
+   112→   112→// DEFLECTION COEFFICIENTS — C in  δ = C × w L⁴ / (384 E I)
+   113→   113→// ═══════════════════════════════════════════════════════════════════════
+   114→   114→
+   115→   115→const DEFLECTION_COEFFICIENTS: Record<string, number> = {
+   116→   116→  simply_supported: 5 / 384,
+   117→   117→  fixed: 1 / 384,
+   118→   118→  partial_fixity: 3 / 384,   // intermediate
+   119→   119→} as const;
+   120→   120→
+   121→   121→// ═══════════════════════════════════════════════════════════════════════
+   122→   122→// DYNAMIC RESPONSE FACTOR — UFC 3-340-02 Ch.5 / Biggs SDOF Method
+   123→   123→// ═══════════════════════════════════════════════════════════════════════
+   124→   124→
+   125→   125→/**
+   126→   126→ * Calculate the Dynamic Response Factor (DLF) for a structural element
+   127→   127→ * under blast loading, using the Biggs SDOF chart approximation.
+   128→   128→ *
+   129→   129→ * ── EQUATION SOURCE ──
+   130→   130→ * Biggs, J.M. (1964) "Introduction to Structural Dynamics",
+   131→   131→ *   Chapter 4, Figure 4-8: DLF vs td/T for triangular pulse.
+   132→   132→ * UFC 3-340-02 (2008), Chapter 5, Figure 5-4: Dynamic Load Factor.
+   133→   133→ * TM 5-1300 (1990), Chapter 5: SDOF Dynamic Analysis.
+   134→   134→ *
+   135→   135→ * ── EQUATION ──
+   136→   136→ * DLF = f(td / T)  where td = positive phase duration, T = natural period
+   137→   137→ *
+   138→   138→ * This is the UFC 3-340-02 equivalent load approach (Option B):
+   139→   139→ *   Equivalent Dynamic Pressure = Peak Pressure × DLF
+   140→   140→ *
+   141→   141→ * ── BIGGS SDOF CHART — Triangular Pulse ──
+   142→   142→ *   td/T < 0.1  →  DLF ≈ 2π × (td/T)        (impulsive regime)
+   143→   143→ *   td/T ≈ 0.2  →  DLF ≈ 1.1                (transition)
+   144→   144→ *   td/T ≈ 0.4  →  DLF ≈ 1.5                (peak dynamic amplification)
+   145→   145→ *   td/T ≈ 1.0  →  DLF ≈ 1.2                (quasi-static transition)
+   146→   146→ *   td/T > 3.0  →  DLF ≈ 1.0                (static regime)
+   147→   147→ *
+   148→   148→ * Note: In the impulsive regime (td/T < 0.1), the DLF is < 1.0 because
+   149→   149→ * the pulse ends before the structure reaches peak response. The
+   150→   150→ * impulse-based equivalent load (Path 2 in calculateDesignLoad) governs
+   151→   151→ * in this regime. The max(Path1, Path2) selection ensures the correct
+   152→   152→ * equivalent load is always used (see calculateDesignLoad documentation).
+   153→   153→ *
+   154→   154→ * @param peakPressure_kPa  - Peak blast pressure on element (kPa)
+   155→   155→ * @param impulse_kPaMs     - Positive phase impulse on element (kPa·ms)
+   156→   156→ * @param duration_ms       - Positive phase duration td (ms)
+   157→   157→ * @param naturalPeriod_ms  - Element natural period T (ms)
+   158→   158→ * @param supportCondition  - Support condition (affects KLM and T)
+   159→   159→ * @returns Dynamic Response Factor DLF (dimensionless)
+   160→   160→ */
+   161→   161→export function calculateDynamicResponseFactor(
+   162→   162→  peakPressure_kPa: number,
+   163→   163→  impulse_kPaMs: number,
+   164→   164→  duration_ms: number,
+   165→   165→  naturalPeriod_ms: number,
+   166→   166→  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity',
+   167→   167→): number {
+   168→   168→  // Edge case: no blast or no duration → static
+   169→   169→  if (peakPressure_kPa <= 0 || duration_ms <= 0 || naturalPeriod_ms <= 0) {
+   170→   170→    return 1.0;
+   171→   171→  }
+   172→   172→
+   173→   173→  const td_T = duration_ms / naturalPeriod_ms;
+   174→   174→
+   175→   175→  // ── Biggs SDOF DLF for triangular pulse ──
+   176→   176→  // Source: Biggs (1964) Fig. 4-8; UFC 3-340-02 Fig. 5-4
+   177→   177→  // Piecewise linear approximation of the standard DLF chart.
+   178→   178→  // DLF = f(td/T) is read from the chart; the piecewise segments
+   179→   179→  // below match the chart values at the tabulated points.
+   180→   180→  let dlf: number;
+   181→   181→
+   182→   182→  if (td_T <= 0.1) {
+   183→   183→    // Impulsive regime: response dominated by impulse, not peak pressure
+   184→   184→    // DLF ≈ ω × td ≈ 2π × td/T (for small td/T)
+   185→   185→    // In this regime, impulse matters more than peak pressure.
+   186→   186→    dlf = 2 * Math.PI * td_T;
+   187→   187→  } else if (td_T <= 0.2) {
+   188→   188→    // Transition from impulsive to dynamic
+   189→   189→    const t01 = 0.1;
+   190→   190→    const dlf01 = 2 * Math.PI * 0.1;  // ≈ 0.628
+   191→   191→    const t02 = 0.2;
+   192→   192→    const dlf02 = 1.1;                  // from Biggs chart at td/T=0.2
+   193→   193→    // Linear interpolation
+   194→   194→    dlf = dlf01 + (dlf02 - dlf01) * (td_T - t01) / (t02 - t01);
+   195→   195→  } else if (td_T <= 0.4) {
+   196→   196→    // Near peak DLF region
+   197→   197→    const t1 = 0.2;
+   198→   198→    const d1 = 1.1;
+   199→   199→    const t2 = 0.4;
+   200→   200→    const d2 = 1.5;
+   201→   201→    dlf = d1 + (d2 - d1) * (td_T - t1) / (t2 - t1);
+   202→   202→  } else if (td_T <= 1.0) {
+   203→   203→    // Dynamic to quasi-static transition
+   204→   204→    const t1 = 0.4;
+   205→   205→    const d1 = 1.5;
+   206→   206→    const t2 = 1.0;
+   207→   207→    const d2 = 1.2;
+   208→   208→    dlf = d1 + (d2 - d1) * (td_T - t1) / (t2 - t1);
+   209→   209→  } else if (td_T <= 3.0) {
+   210→   210→    // Quasi-static transition
+   211→   211→    const t1 = 1.0;
+   212→   212→    const d1 = 1.2;
+   213→   213→    const t2 = 3.0;
+   214→   214→    const d2 = 1.0;
+   215→   215→    dlf = d1 + (d2 - d1) * (td_T - t1) / (t2 - t1);
+   216→   216→  } else {
+   217→   217→    // Static regime: load is applied slowly relative to structure period
+   218→   218→    dlf = 1.0;
+   219→   219→  }
+   220→   220→
+   221→   221→  // Return raw DLF — may be < 1.0 in impulsive regime.
+   222→   222→  // The calling function (calculateDesignLoad) takes the MAX of
+   223→   223→  // the pressure-DLF path and the impulse-based path, so the
+   224→   224→  // final equivalent load is always physically correct.
+   225→   225→  return dlf;
+   226→   226→}
+   227→   227→
+   228→   228→/**
+   229→   229→ * Estimate the natural period of vibration for a concrete slab element.
+   230→   230→ *
+   231→   231→ * ── CALCULATION PATH (first principles → SDOF) ──
+   232→   232→ *
+   233→   233→ * Step 1: First-mode natural frequency of a uniform beam (Euler-Bernoulli):
+   234→   234→ *   ω₁ = (π/L)² × √(EI / m_line)
+   235→   235→ *   where I = h³/12 (per meter width), m_line = ρ × h (kg/m)
+   236→   236→ *   → ω₁ = (π/L)² × h × √(E / (12ρ))
+   237→   237→ *
+   238→   238→ * Step 2: SDOF conversion via Biggs transformation factors
+   239→   239→ *   (UFC 3-340-02 Table 5-1 / Biggs Table 5-1):
+   240→   240→ *   K_M = mass transformation factor, K_L = load transformation factor
+   241→   241→ *   T_SDOF = 2π √(K_M × M_total / (K_L × k_elastic))
+   242→   242→ *   The ratio K_M/K_L = K_LM (combined load-mass factor):
+   243→   243→ *     SS: K_LM = K_M/K_L = 0.50/0.64 = 0.78
+   244→   244→ *     FF: K_LM = K_M/K_L = 0.41/0.64 = 0.64
+   245→   245→ *
+   246→   246→ * Step 3: Empirical formula (dimensional consolidation):
+   247→   247→ *   T = C × L × (L/h)²   [ms]
+   248→   248→ *   where C incorporates: 2π, π², √(E/(12ρ)), K_LM, and the
+   249→   249→ *   unit conversion factor (s → ms).
+   250→   250→ *
+   251→   251→ *   For SS: C_SS = (2/π) × √(K_LM) × 1000 / √(E/(12ρ))
+   252→   252→ *   With E = 4700√f'c MPa, ρ = 2400 kg/m³:
+   253→   253→ *     √(E/(12ρ)) ≈ 986 m/s  →  C_SS ≈ 0.063
+   254→   254→ *   For FF: C_FF = C_SS × √(K_LM_FF / K_LM_SS) = 0.063 × √(0.64/0.78) ≈ 0.031
+   255→   255→ *
+   256→   256→ * ── SOURCE OF C VALUES ──
+   257→   257→ * C is NOT an arbitrary constant. It is derived from:
+   258→   258→ *   1. Euler-Bernoulli beam theory (first mode shape)
+   259→   259→ *   2. Biggs SDOF transformation factors (K_LM from UFC 3-340-02 Table 5-1)
+   260→   260→ *   3. Typical RC material properties (E ≈ 28,000 MPa, ρ ≈ 2,400 kg/m³)
+   261→   261→ *   4. Dimensional consolidation: s → ms
+   262→   262→ *
+   263→   263→ * These values are consistent with structure/index.ts.
+   264→   264→ *
+   265→   265→ * Reference: Biggs (1964) Ch.5; UFC 3-340-02 Table 5-1; TM 5-1300 Ch.5
+   266→   266→ *
+   267→   267→ * @param span_m           - Clear span (m)
+   268→   268→ * @param thickness_m      - Element thickness (m)
+   269→   269→ * @param density_kg_m3    - Concrete density (kg/m³)
+   270→   270→ * @param supportCondition - Support type
+   271→   271→ * @returns Natural period T (ms)
+   272→   272→ */
+   273→   273→export function estimateNaturalPeriod(
+   274→   274→  span_m: number,
+   275→   275→  thickness_m: number,
+   276→   276→  density_kg_m3: number,
+   277→   277→  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity',
+   278→   278→): number {
+   279→   279→  if (span_m <= 0 || thickness_m <= 0) return 10; // default 10ms
+   280→   280→
+   281→   281→  const safeH = Math.max(thickness_m, 0.001);
+   282→   282→  const safeL = Math.max(span_m, 0.001);
+   283→   283→
+   284→   284→  // Coefficient C derived from SDOF first principles (see JSDoc above):
+   285→   285→  //   SS:  C = 0.063  (from K_LM = 0.78, E≈28GPa, ρ≈2400 kg/m³)
+   286→   286→  //   FF:  C = 0.031  (from K_LM = 0.64, same material properties)
+   287→   287→  //   PF:  C = 0.047  (geometric mean: √(0.063 × 0.031) ≈ 0.044, rounded)
+   288→   288→  let C: number;
+   289→   289→  switch (supportCondition) {
+   290→   290→    case 'fixed':
+   291→   291→      C = 0.031;
+   292→   292→      break;
+   293→   293→    case 'partial_fixity':
+   294→   294→      C = 0.047; // geometric mean of SS and fixed
+   295→   295→      break;
+   296→   296→    default:
+   297→   297→      C = 0.063;
+   298→   298→  }
+   299→   299→
+   300→   300→  // T = C × L × (L/h)²  (result in ms)
+   301→   301→  // Dimensional check: [C] × m × (m/m)² = [C] × m → ms ✓
+   302→   302→  const T = C * safeL * Math.pow(safeL / safeH, 2);
+   303→   303→
+   304→   304→  // Clamp to physically reasonable range [1, 500] ms
+   305→   305→  return Math.max(1, Math.min(500, T));
+   306→   306→}
+   307→   307→
+   308→   308→// ═══════════════════════════════════════════════════════════════════════
+   309→   309→// DESIGN LOAD CALCULATION
+   310→   310→// ═══════════════════════════════════════════════════════════════════════
+   311→   311→
+   312→   312→/**
+   313→   313→ * Calculate the peak blast pressure component for one structural element.
+   314→   314→ *
+   315→   315→ * This function selects the correct blast pressure source per element type
+   316→   316→ * from DesignBlastInput. These values come from the blast engine
+   317→   317→ * (Kingery-Bulmash via TM 5-1300) — they are NEVER recalculated in the
+   318→   318→ * design module.
+   319→   319→ *
+   320→   320→ *   Roof:  peakReflectedPressure (normal incidence)
+   321→   321→ *   Wall:  peakReflectedPressure × 0.70 (lateral distribution, TM 5-1300 Ch.5)
+   322→   322→ *   Floor: peakDynamicPressure (Rankine-Hugoniot dynamic pressure)
+   323→   323→ *
+   324→   324→ * @param element - Structural element type
+   325→   325→ * @param blast   - Complete blast threat data (DesignInput.blast)
+   326→   326→ * @returns Peak blast pressure for this element (kPa)
+   327→   327→ */
+   328→   328→export function getPeakBlastPressure(
+   329→   329→  element: 'roof' | 'wall' | 'floor',
+   330→   330→  blast: DesignBlastInput,
+   331→   331→): number {
+   332→   332→  switch (element) {
+   333→   333→    case 'roof':
+   334→   334→      return blast.peakReflectedPressure;
+   335→   335→    case 'wall':
+   336→   336→      return blast.peakReflectedPressure * WALL_BLAST_FACTOR;
+   337→   337→    case 'floor':
+   338→   338→      return blast.peakDynamicPressure;
+   339→   339→  }
+   340→   340→}
+   341→   341→
+   342→   342→/**
+   343→   343→ * Get the Load-Mass Factor (KLM) for an SDOF equivalent system.
+   344→   344→ *
+   345→   345→ * ── EQUATION SOURCE ──
+   346→   346→ * Biggs, J.M. (1964) "Introduction to Structural Dynamics",
+   347→   347→ *   Table 5-1: Transformation Factors for Single-Degree Systems.
+   348→   348→ * UFC 3-340-02 (2008), Chapter 5, Table 5-1: SDOF Factors.
+   349→   349→ * TM 5-1300 (1990), Chapter 5, Table 5-1.
+   350→   350→ *
+   351→   351→ * ── DEFINITION ──
+   352→   352→ * K_LM = K_M / K_L
+   353→   353→ *   where K_M = mass transformation factor (effective mass / total mass)
+   354→   354→ *         K_L = load transformation factor (equivalent load / total load)
+   355→   355→ *
+   356→   356→ * For uniform load on one-way element:
+   357→   357→ *   SS: K_M = 0.50, K_L = 0.64 → K_LM = 0.50/0.64 = 0.781 ≈ 0.78
+   358→   358→ *   FF: K_M = 0.41, K_L = 0.64 → K_LM = 0.41/0.64 = 0.641 ≈ 0.64
+   359→   359→ *
+   360→   360→ * ── USAGE ──
+   361→   361→ * 1. Natural period: T = 2π √(K_LM × m / k) (via empirical C values)
+   362→   362→ * 2. Impulse equivalent load: P_eq = 2π × I / (T × K_LM)
+   363→   363→ *
+   364→   364→ * @param supportCondition - Support type
+   365→   365→ * @returns KLM (dimensionless)
+   366→   366→ */
+   367→   367→function getLoadMassFactor(
+   368→   368→  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity',
+   369→   369→): number {
+   370→   370→  // KLM values from UFC 3-340-02 Table 5-1 / Biggs Table 5-1:
+   371→   371→  //   SS: K_M=0.50, K_L=0.64 → K_LM = 0.78
+   372→   372→  //   FF: K_M=0.41, K_L=0.64 → K_LM = 0.64
+   373→   373→  //   PF: arithmetic mean of SS and FF = 0.71
+   374→   374→  switch (supportCondition) {
+   375→   375→    case 'fixed':
+   376→   376→      return LOAD_MASS_FACTOR_FF;    // 0.64
+   377→   377→    case 'partial_fixity':
+   378→   378→      return (LOAD_MASS_FACTOR_SS + LOAD_MASS_FACTOR_FF) / 2; // 0.71
+   379→   379→    default:
+   380→   380→      return LOAD_MASS_FACTOR_SS;    // 0.78
+   381→   381→  }
+   382→   382→}
+   383→   383→
+   384→   384→/**
+   385→   385→ * Calculate the equivalent dynamic blast load for one structural element.
+   386→   386→ *
+   387→   387→ * ── EQUATION SOURCE ──
+   388→   388→ * UFC 3-340-02 (2008), Chapter 5: Dynamic Analysis of Structural Elements.
+   389→   389→ * Biggs, J.M. (1964) "Introduction to Structural Dynamics", Chapters 4-5.
+   390→   390→ * TM 5-1300 (1990), Chapter 5: SDOF Design Methods.
+   391→   391→ *
+   392→   392→ * ── DUAL-PATH METHOD ──
+   393→   393→ * This function implements the UFC 3-340-02 equivalent load approach using
+   394→   394→ * a DUAL-PATH method that captures BOTH pressure-dominated and
+   395→   395→ * impulse-dominated response:
+   396→   396→ *
+   397→   397→ *   Path 1 (Pressure-dominated):  w₁ = P_peak × DLF(td/T)
+   398→   398→ *   Path 2 (Impulse-dominated):   w₂ = 2π × I / (T × KLM)
+   399→   399→ *
+   400→   400→ *   w_blast = max(w₁, w₂)
+   401→   401→ *
+   402→   402→ * ── WHY max(pressure, impulse)? ──
+   403→   403→ * The max() selection is the standard UFC SDOF methodology:
+   404→   404→ *
+   405→   405→ * In the DYNAMIC regime (0.1 ≤ td/T ≤ 3.0), Path 1 governs because
+   406→   406→ * the structure has time to build up dynamic amplification. The DLF
+   407→   407→ * from the Biggs chart (≥ 1.0) correctly captures the peak response.
+   408→   408→ * The impulse formula (Path 2) would double-count the dynamic effect.
+   409→   409→ *
+   410→   410→ * In the IMPULSIVE regime (td/T < 0.1), the pulse ends before the
+   411→   411→ * structure reaches peak response. The DLF drops below 1.0 because
+   412→   412→ * the pressure is not sustained. Here, the response is governed by
+   413→   413→ * the total impulse (momentum transfer), not the peak pressure.
+   414→   414→ * Path 2 (impulse equivalent) correctly captures this. The DLF in
+   415→   415→ * Path 1 would underestimate the response.
+   416→   416→ *
+   417→   417→ * Therefore, max(w₁, w₂) ensures the correct governing load in BOTH
+   418→   418→ * regimes without double-counting. This is consistent with the UFC
+   419→   419→ * 3-340-02 SDOF methodology where the designer must check both the
+   420→   420→ * pressure-time and impulse-time response envelopes.
+   421→   421→ *
+   422→   422→ * ── EQUATION REFERENCES ──
+   423→   423→ * Path 1 — DLF chart: Biggs (1964) Fig. 4-8; UFC 3-340-02 Fig. 5-4
+   424→   424→ * Path 2 — Impulse:  Biggs (1964) Eq. 4-18 (SDOF impulse response):
+   425→   425→ *   x_max = I / (ω_n × M_e)
+   426→   426→ *   P_eq = k × x_max = k × I / (ω_n × K_M × M_total)
+   427→   427→ *   Since ω_n = 2π/T and k = (2π/T)² × K_LM × M_total:
+   428→   428→ *   P_eq = (2π/T)² × K_LM × M × I / (2π/T × K_M × M)
+   429→   429→ *        = (2π × I) / (T × (K_M/K_L)) = (2π × I) / (T × K_LM)
+   430→   430→ *   where K_LM = K_M / K_L from Biggs Table 5-1.
+   431→   431→ *
+   432→   432→ * ── UNIT CHECK (Path 2) ──
+   433→   433→ *   2π × I [kPa·ms] / (T [ms] × K_LM [-]) = kPa ✓
+   434→   434→ *
+   435→   435→ * ALL four dynamic parameters affect the result:
+   436→   436→ *   - Peak pressure P → Path 1
+   437→   437→ *   - Impulse I → Path 2 (kPa·ms)
+   438→   438→ *   - Duration td → Path 1 (via td/T ratio, both in ms)
+   439→   439→ *   - Natural period T → Both paths (ms)
+   440→   440→ *   - Load-mass factor KLM → Path 2 (dimensionless)
+   441→   441→ *
+   442→   442→ * IMPORTANT: This is NOT a static beam calculation. The dual-path DLF
+   443→   443→ * captures the dynamic amplification/dampening effect of the blast pulse
+   444→   444→ * on the structure. For impulsive loads (td << T), Path 2 governs.
+   445→   445→ * For quasi-static loads (td >> T), Path 1 with DLF≈1.0 governs.
+   446→   446→ *
+   447→   447→ * @param element     - Structural element type
+   448→   448→ * @param elementLoad - Per-element load data
+   449→   449→ * @param blast       - Complete blast threat data (DesignInput.blast)
+   450→   450→ * @param thickness_m - Current design thickness (m) — affects natural period
+   451→   451→ * @returns Total equivalent dynamic design load w (kPa)
+   452→   452→ */
+   453→   453→export function calculateDesignLoad(
+   454→   454→  element: 'roof' | 'wall' | 'floor',
+   455→   455→  elementLoad: DesignElementLoad,
+   456→   456→  blast: DesignBlastInput,
+   457→   457→  thickness_m?: number,
+   458→   458→): number {
+   459→   459→  // ── 1. Select peak blast pressure per element type ──
+   460→   460→  const peakPressure = getPeakBlastPressure(element, blast);
+   461→   461→
+   462→   462→  // ── 2. Compute element natural period at current thickness (ms) ──
+   463→   463→    // T depends on: span, thickness, density, supportCondition.
+   464→   464→    // See estimateNaturalPeriod() JSDoc for derivation path.
+   465→   465→    // T changes at each iteration because thickness changes → DLF changes.
+   466→   466→  const h = thickness_m ?? elementLoad.thickness;
+   467→   467→  const T = estimateNaturalPeriod(
+   468→   468→    elementLoad.span, h, elementLoad.material.density,
+   469→   469→    elementLoad.supportCondition,
+   470→   470→  );
+   471→   471→
+   472→   472→  // ── 3. Load-Mass Factor KLM (dimensionless) ──
+   473→   473→  // Source: Biggs Table 5-1 / UFC 3-340-02 Table 5-1
+   474→   474→  // SS: K_LM = 0.50/0.64 = 0.78,  FF: K_LM = 0.41/0.64 = 0.64
+   475→   475→  const KLM = getLoadMassFactor(elementLoad.supportCondition);
+   476→   476→
+   477→   477→  // ── 4. Path 1: Pressure-dominated equivalent load (kPa) ──
+   478→   478→  // Source: Biggs (1964) Fig. 4-8; UFC 3-340-02 Fig. 5-4
+   479→   479→  // w₁ = P_peak [kPa] × DLF(td/T) [-] → kPa
+   480→   480→  // DLF depends on: duration [ms] / naturalPeriod [ms] = dimensionless ratio
+   481→   481→  const dlf = calculateDynamicResponseFactor(
+   482→   482→    peakPressure,                      // P_peak [kPa]
+   483→   483→    elementLoad.dynamicImpulse,        // I [kPa·ms] — passed for documentation;
+   484→   484→    elementLoad.dynamicDuration,       // td [ms]
+   485→   485→    T,                                 // T [ms]
+   486→   486→    elementLoad.supportCondition,
+   487→   487→  );
+   488→   488→  const w_pressurePath = peakPressure * dlf;  // [kPa] × [-] = kPa
+   489→   489→
+   490→   490→  // ── 5. Path 2: Impulse-dominated equivalent load (kPa) ──
+   491→   491→  // Source: Biggs (1964) Eq. 4-18; UFC 3-340-02 Ch.5
+   492→   492→  //
+   493→   493→  // Formula: P_eq = 2π × I / (T × KLM)
+   494→   494→  //   Units: 2π [-] × I [kPa·ms] / (T [ms] × KLM [-]) = kPa ✓
+   495→   495→  //
+   496→   496→  // Only meaningful in the impulsive regime (td/T < 0.2) where DLF < 1.0.
+   497→   497→  // In the dynamic/quasi-static regime (td/T >= 0.2), the pressure path
+   498→   498→  // with DLF >= 1.0 correctly captures the response. Applying the
+   499→   499→  // impulse formula there would be double-counting.
+   500→   500→  //
+   501→   501→  // WHY td/T < 0.2 threshold? At td/T ≈ 0.2, the Biggs chart shows
+   502→   502→  // DLF ≈ 1.0 (crossover point). Below this, DLF < 1.0 and the
+   503→   503→  // impulse-based formula provides the correct governing load.
+   504→   504→  const td_T = elementLoad.dynamicDuration / T;  // [ms] / [ms] = [-]
+   505→   505→  let w_impulsePath = 0;
+   506→   506→  if (td_T < 0.2 && elementLoad.dynamicImpulse > 0) {
+   507→   507→    // 2π × I [kPa·ms] / (T [ms] × KLM [-]) → kPa
+   508→   508→    w_impulsePath = (2 * Math.PI * elementLoad.dynamicImpulse) / (T * KLM);
+   509→   509→  }
+   510→   510→
+   511→   511→  // ── 6. Governing equivalent blast load (kPa) ──
+   512→   512→  // max(w₁, w₂) ensures correct load in BOTH regimes:
+   513→   513→  //   - Dynamic/quasi-static: w₁ (DLF ≥ 1.0) governs
+   514→   514→  //   - Impulsive: w₂ (momentum transfer) governs
+   515→   515→  // This is standard UFC SDOF methodology (UFC 3-340-02 Ch.5).
+   516→   516→  const equivalentBlastLoad = Math.max(w_pressurePath, w_impulsePath);
+   517→   517→
+   518→   518→  // ── 7. Add static component (kPa) ──
+   519→   519→  // Static pressure (overburden/lateral/soilReaction/selfWeight) is NOT
+   520→   520→  // multiplied by DLF — it is a sustained dead load, not a blast impulse.
+   521→   521→  // Unit: kPa + kPa = kPa ✓
+   522→   522→  return equivalentBlastLoad + elementLoad.staticPressure;
+   523→   523→}
+   524→   524→
+   525→   525→// ═══════════════════════════════════════════════════════════════════════
+   526→   526→// MOMENT DEMAND
+   527→   527→// ═══════════════════════════════════════════════════════════════════════
+   528→   528→
+   529→   529→/**
+   530→   530→ * Calculate design bending moment for a uniformly loaded element.
+   531→   531→ *
+   532→   532→ * IMPORTANT: The input load w must be the EQUIVALENT DYNAMIC BLAST LOAD
+   533→   533→ * (from calculateDesignLoad), NOT a static pressure. The DLF and impulse
+   534→   534→ * response are already embedded in w by calculateDesignLoad().
+   535→   535→ *
+   536→   536→ * This function only applies the static beam moment coefficients:
+   537→   537→ *   Simply supported:  Mu = w L² / 8
+   538→   538→ *   Fixed:            Mu = w L² / 12
+   539→   539→ *   Partial fixity:   Mu = w L² / 10
+   540→   540→ *
+   541→   541→ * Source: Standard structural mechanics (any strength of materials textbook).
+   542→   542→ * These coefficients are for a uniformly loaded one-way spanning element.
+   543→   543→ *
+   544→   544→ * @param w                - Total design load (kPa = kN/m²) — includes dynamic DLF
+   545→   545→ * @param span             - Clear span L (m)
+   546→   546→ * @param supportCondition - Support type
+   547→   547→ * @returns Design moment Mu (kN·m per meter width)
+   548→   548→ */
+   549→   549→export function calculateDesignMoment(
+   550→   550→  w: number,
+   551→   551→  span: number,
+   552→   552→  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity',
+   553→   553→): number {
+   554→   554→  const C = MOMENT_COEFFICIENTS[supportCondition] ?? 8;
+   555→   555→  return (w * span * span) / C;
+   556→   556→}
+   557→   557→
+   558→   558→// ═══════════════════════════════════════════════════════════════════════
+   559→   559→// SHEAR DEMAND
+   560→   560→// ═══════════════════════════════════════════════════════════════════════
+   561→   561→
+   562→   562→/**
+   563→   563→ * Calculate design shear for a uniformly loaded element.
+   564→   564→ * Vu = w × L / 2  (same for all support conditions)
+   565→   565→ *
+   566→   566→ * Note: w is the equivalent dynamic blast load (kPa) from calculateDesignLoad.
+   567→   567→ * Units: w [kPa] × L [m] = kN/m ✓
+   568→   568→ *
+   569→   569→ * @param w    - Total design load (kPa) — includes dynamic DLF
+   570→   570→ * @param span - Clear span (m)
+   571→   571→ * @returns Design shear Vu (kN/m)
+   572→   572→ */
+   573→   573→export function calculateDesignShear(
+   574→   574→  w: number,
+   575→   575→  span: number,
+   576→   576→): number {
+   577→   577→  return (w * span) / 2;
+   578→   578→}
+   579→   579→
+   580→   580→// ═══════════════════════════════════════════════════════════════════════
+   581→   581→// DEFLECTION (gross moment of inertia)
+   582→   582→// ═══════════════════════════════════════════════════════════════════════
+   583→   583→
+   584→   584→/**
+   585→   585→ * Calculate mid-span deflection using gross moment of inertia.
+   586→   586→ *
+   587→   587→ * δ = C × w × L⁴ / (E × I)
+   588→   588→ * where  I = b × h³ / 12   (b = 1 m for per-meter strip)
+   589→   589→ *
+   590→   590→ * @param w                - Total design load (kPa)
+   591→   591→ * @param span             - Clear span (m)
+   592→   592→ * @param Ec_MPa           - Concrete modulus of elasticity (MPa)
+   593→   593→ * @param thickness_m      - Element thickness (m)
+   594→   594→ * @param supportCondition - Support type
+   595→   595→ * @returns Maximum deflection δ (mm)
+   596→   596→ */
+   597→   597→export function calculateDeflection(
+   598→   598→  w: number,
+   599→   599→  span: number,
+   600→   600→  Ec_MPa: number,
+   601→   601→  thickness_m: number,
+   602→   602→  supportCondition: 'simply_supported' | 'fixed' | 'partial_fixity',
+   603→   603→): number {
+   604→   604→  if (Ec_MPa <= 0 || thickness_m <= 0 || span <= 0) return 0;
+   605→   605→
+   606→   606→  const C = DEFLECTION_COEFFICIENTS[supportCondition] ?? (5 / 384);
+   607→   607→  const E_kN_m2 = Ec_MPa * 1000;           // MPa → kN/m²
+   608→   608→  const I_m4 = Math.pow(thickness_m, 3) / 12; // b=1m
+   609→   609→
+   610→   610→  const delta_m = (C * w * Math.pow(span, 4)) / (E_kN_m2 * I_m4);
+   611→   611→  return delta_m * 1000; // → mm
+   612→   612→}
+   613→   613→
+   614→   614→// ═══════════════════════════════════════════════════════════════════════
+   615→   615→// ELEMENT DESIGN — Iterative Thickness Search
+   616→   616→// ═══════════════════════════════════════════════════════════════════════
+   617→   617→
+   618→   618→/**
+   619→   619→ * Design a single structural element with iterative thickness search.
+   620→   620→ *
+   621→   621→ * Algorithm:
+   622→   622→ *   1. Start at existingThickness (from analysis input)
+   623→   623→ *   2. Compute design load w (blast + static)
+   624→   624→ *   3. Compute moment Mu and shear Vu
+   625→   625→ *   4. Compute required As (using static fy)
+   626→   626→ *   5. Select reinforcement bars
+   627→   627→ *   6. Compute capacity φMn (using DIF-modified fy) and φVc (using DIF-modified f'c)
+   628→   628→ *   7. Check safety factors against targetSafetyFactor
+   629→   629→ *   8. Check penetration: h >= max(perforationThickness, scabbingThickness)
+   630→   630→ *   9. If not met: increase thickness by thicknessIncrement, goto 2
+   631→   631→ *  10. Max 100 iterations; if maxThickness exceeded → status = 'fail'
+   632→   632→ *
+   633→   633→ * Thickness convergence requires ALL three criteria:
+   634→   634→ *   h_required = max(flexural required h, shear required h, penetration required h)
+   635→   635→ *
+   636→   636→ * This function does NOT mutate any input parameters.
+   637→   637→ *
+   638→   638→ * @param element     - Structural element type
+   639→   639→ * @param elementLoad - Per-element load data (from DesignInput.elements)
+   640→   640→ * @param blast       - Complete blast threat data (from DesignInput.blast)
+   641→   641→ * @param criteria    - Design criteria (from DesignInput.criteria)
+   642→   642→ * @param penetration - Penetration data from analysis (optional; if omitted, penetration
+   643→   643→ *                       check is skipped — used for backward compatibility and unit tests)
+   644→   644→ * @returns Complete ElementDesignResult
+   645→   645→ */
+   646→   646→export function designElement(
+   647→   647→  element: 'roof' | 'wall' | 'floor',
+   648→   648→  elementLoad: DesignElementLoad,
+   649→   649→  blast: DesignBlastInput,
+   650→   650→  criteria: DesignCriteria,
+   651→   651→  penetration?: DesignPenetrationData,
+   652→   652→): ElementDesignResult {
+   653→   653→  const warnings: string[] = [];
+   654→   654→  const MAX_ITERATIONS = 100;
+   655→   655→
+   656→   656→  const supportCondition = element === 'wall'
+   657→   657→    ? criteria.wallSupportCondition
+   658→   658→    : criteria.supportCondition;
+   659→   659→
+   660→   660→  // Dynamic Increase Factors (UFC 3-340-02 Sec 5.14.3)
+   661→   661→  const steelDIF = calculateSteelDIF(criteria.steelGrade);
+   662→   662→  const fy_dynamic = criteria.steelGrade * steelDIF;   // DIF applied to capacity only
+   663→   663→
+   664→   664→  // Concrete DIF from material properties (set by adapter from analysis)
+   665→   665→  const fpc_dynamic = elementLoad.material.fpc * elementLoad.material.difCompressive;
+   666→   666→
+   667→   667→  let currentThickness = elementLoad.thickness;
+   668→   668→  let result: ElementDesignResult;
+   669→   669→
+   670→   670→  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+   671→   671→    // ── 1. Equivalent Dynamic Blast Load ─────────────────────────
+   672→   672→    // w = calculateDesignLoad() returns the DYNAMIC blast equivalent load
+   673→   673→    // (not a static pressure). It includes:
+   674→   674→    //   - Peak pressure × DLF(td/T) [Path 1, Biggs SDOF]
+   675→   675→    //   - 2π×I/(T×KLM)            [Path 2, impulse response]
+   676→   676→    //   - max(Path1, Path2)        [UFC SDOF methodology]
+   677→   677→    //   - + staticPressure (NOT multiplied by DLF)
+   678→   678→    //
+   679→   679→    // The thickness is passed so T is recalculated at each iteration
+   680→   680→    // (T changes as h changes → DLF changes → w changes).
+   681→   681→    const w_base = calculateDesignLoad(element, elementLoad, blast, currentThickness);
+   682→   682→
+   683→   683→    // Account for additional self-weight from thickness increase
+   684→   684→    const thicknessIncrease = Math.max(0, currentThickness - elementLoad.thickness);
+   685→   685→    const additionalSelfWeight = (elementLoad.material.density * thicknessIncrease * GRAVITY) / 1000; // kPa
+   686→   686→    const w = w_base + additionalSelfWeight;
+   687→   687→
+   688→   688→    // ── 2. Moment & Shear demand ────────────────────────────────
+   689→   689→    // Mu is derived from the EQUIVALENT DYNAMIC BLAST LOAD, not from
+   690→   690→    // static pressure. The load w already contains the DLF and/or
+   691→   691→    // impulse response factors from calculateDesignLoad().
+   692→   692→    //
+   693→   693→    //   w = P_peak × DLF(td/T) + static   [OR impulse path]
+   694→   694→    //   Mu = w × L² / C
+   695→   695→    //
+   696→   696→    // This is NOT a static Mu = P_peak × L²/8. The DLF, impulse, duration,
+   697→   697→    // natural period, and KLM all flow through w to Mu.
+   698→   698→    //
+   699→   699→    // Source: UFC 3-340-02 Ch.5 (Dynamic Analysis); Biggs (1964) Ch.5
+   700→   700→    const Mu = calculateDesignMoment(w, elementLoad.span, supportCondition);
+   701→   701→    const Vu = calculateDesignShear(w, elementLoad.span);
+   702→   702→
+   703→   703→    // ── 3. Effective depth (assume T16 for initial As estimate) ─
+   704→   704→    const d_assumed = calculateEffectiveDepth(currentThickness, criteria.concreteCover, 16);
+   705→   705→
+   706→   706→    // ── 4. Required As (STATIC fy — DIF applied only to capacity) ─
+   707→   707→    // Input moment Mu is the DYNAMIC blast moment (via DLF).
+   708→   708→    // As is computed with static fy; DIF is applied only at
+   709→   709→    // capacity check (step 7) per UFC 3-340-02 Sec 5.14.3.
+   710→   710→    const As_req = calculateRequiredAs(
+   711→   711→      Mu, d_assumed, elementLoad.material.fpc, criteria.steelGrade, ACI_DESIGN_FACTORS.flexure,
+   712→   712→    );
+   713→   713→
+   714→   714→    // ── 5. Select reinforcement ─────────────────────────────────
+   715→   715→    const mainRebar = selectReinforcement(As_req);
+   716→   716→    const distributionRebar = selectDistributionReinforcement(mainRebar);
+   717→   717→
+   718→   718→    // ── 6. Recompute d with actual selected bar diameter ────────
+   719→   719→    const d_actual = calculateEffectiveDepth(
+   720→   720→      currentThickness, criteria.concreteCover, mainRebar.barDiameter,
+   721→   721→    );
+   722→   722→
+   723→   723→    // ── 7. Flexural capacity (DYNAMIC fy — DIF applied) ────────
+   724→   724→    const Mn = calculateFlexuralCapacity(
+   725→   725→      mainRebar.asProvided, d_actual, elementLoad.material.fpc, fy_dynamic, ACI_DESIGN_FACTORS.flexure,
+   726→   726→    );
+   727→   727→
+   728→   728→    // ── 8. Shear capacity (DYNAMIC f'c — concrete DIF applied) ──
+   729→   729→    const phiVc = calculateShearCapacity(fpc_dynamic, d_actual, ACI_DESIGN_FACTORS.shear);
+   730→   730→
+   731→   731→    // ── 9. Safety factors ───────────────────────────────────────
+   732→   732→    const flexuralSF = Mu > 0 ? Mn / Mu : Infinity;
+   733→   733→    const shearSF = Vu > 0 ? phiVc / Vu : Infinity;
+   734→   734→
+   735→   735→    // ── 10. Deflection ─────────────────────────────────────────
+   736→   736→    const maxDeflection = calculateDeflection(
+   737→   737→      w, elementLoad.span, elementLoad.material.Ec, currentThickness, supportCondition,
+   738→   738→    );
+   739→   739→    const allowableDeflection = criteria.maxDeflectionRatio * elementLoad.span * 1000; // mm
+   740→   740→
+   741→   741→    // ── 11. Status determination ───────────────────────────────
+   742→   742→    // Three failure modes must all be satisfied:
+   743→   743→    //   (a) Flexural SF >= target
+   744→   744→    //   (b) Shear SF >= target
+   745→   745→    //   (c) Penetration: h >= max(perforationThickness, scabbingThickness)
+   746→   746→    //
+   747→   747→    // h_required = max(flexural h, shear h, penetration h)
+   748→   748→    const structuralPass =
+   749→   749→      flexuralSF >= criteria.targetSafetyFactor &&
+   750→   750→      shearSF >= criteria.targetSafetyFactor;
+   751→   751→
+   752→   752→    // Penetration check (from NDRC/TM 5-855-1 — values come from analysis engine)
+   753→   753→    const penetrationRequired = penetration
+   754→   754→      ? Math.max(penetration.perforationThickness, penetration.scabbingThickness)
+   755→   755→      : 0;
+   756→   756→    const penetrationPass =
+   757→   757→      penetrationRequired <= 0 ||  // no penetration threat → always pass
+   758→   758→      currentThickness >= penetrationRequired;
+   759→   759→
+   760→   760→    let status: 'pass' | 'fail' | 'optimize';
+   761→   761→    if (structuralPass && penetrationPass) {
+   762→   762→      status = 'pass';
+   763→   763→    } else if (currentThickness >= criteria.maxThickness) {
+   764→   764→      status = 'fail';
+   765→   765→      if (!structuralPass) {
+   766→   766→        warnings.push(
+   767→   767→          `السماكة القصوى (${criteria.maxThickness} m) تم بلوغها دون تحقيق عامل الأمان المطلوب (${criteria.targetSafetyFactor})`,
+   768→   768→        );
+   769→   769→      }
+   770→   770→      if (!penetrationPass) {
+   771→   771→        warnings.push(
+   772→   772→          `السماكة القصوى (${criteria.maxThickness} m) تم بلوغها دون تلبية متطلبات مقاومة الاختراق (${penetrationRequired.toFixed(3)} m)`,
+   773→   773→        );
+   774→   774→      }
+   775→   775→    } else {
+   776→   776→      status = 'optimize';
+   777→   777→    }
+   778→   778→
+   779→   779→    // ── 12. Assemble result ─────────────────────────────────────
+   780→   780→    result = {
+   781→   781→      element,
+   782→   782→      existingThickness: elementLoad.thickness,
+   783→   783→      requiredThickness: currentThickness,
+   784→   784→      recommendedThickness: currentThickness,
+   785→   785→      designMoment: Mu,
+   786→   786→      requiredAs: As_req,
+   787→   787→      providedAs: mainRebar.asProvided,
+   788→   788→      mainReinforcement: mainRebar,
+   789→   789→      distributionReinforcement: distributionRebar,
+   790→   790→      designShear: Vu,
+   791→   791→      shearCapacity: phiVc,
+   792→   792→      maxDeflection,
+   793→   793→      allowableDeflection,
+   794→   794→      flexuralSafetyFactor: flexuralSF,
+   795→   795→      shearSafetyFactor: shearSF,
+   796→   796→      status,
+   797→   797→      warnings: [...warnings],
+   798→   798→    };
+   799→   799→
+   800→   800→    // ── 13. Check convergence ───────────────────────────────────
+   801→   801→    if (status === 'pass' || status === 'fail') break;
+   802→   802→
+   803→   803→    // Increase thickness for next iteration
+   804→   804→    currentThickness += criteria.thicknessIncrement;
+   805→   805→  }
+   806→   806→
+   807→   807→  return result!;
+   808→   808→}
+   809→   809→
+   810→   810→// ═══════════════════════════════════════════════════════════════════════
+   811→   811→// MAIN ENTRY POINT
+   812→   812→// ═══════════════════════════════════════════════════════════════════════
+   813→   813→
+   814→   814→/**
+   815→   815→ * Run structural design for all three elements.
+   816→   816→ *
+   817→   817→ * This is the main entry point for the structural design engine.
+   818→   818→ * It reads ONLY DesignInput — never touches FullAnalysisResult.
+   819→   819→ *
+   820→   820→ * @param designInput - Complete design input (from DesignInputAdapter)
+   821→   821→ * @returns Per-element design results
+   822→   822→ */
+   823→   823→export function runStructuralDesign(designInput: DesignInput): {
+   824→   824→  roof: ElementDesignResult;
+   825→   825→  wall: ElementDesignResult;
+   826→   826→  floor: ElementDesignResult;
+   827→   827→} {
+   828→   828→  const { elements, blast, criteria, penetration } = designInput;
+   829→   829→
+   830→   830→  return {
+   831→   831→    roof: designElement('roof', elements.roof, blast, criteria, penetration.roof),
+   832→   832→    wall: designElement('wall', elements.wall, blast, criteria, penetration.wall),
+   833→   833→    floor: designElement('floor', elements.floor, blast, criteria, penetration.floor),
+   834→   834→  };
+   835→   835→}
