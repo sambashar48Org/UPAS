@@ -82,5 +82,44 @@ body,
   color: var(--upas-text-primary);
 }
 
+/* ─── Print Layout (5E-2) ────────────────────────────────────────── */
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  [data-no-print] {
+    display: none !important;
+  }
+
+  /* Force A4 page size */
+  @page {
+    size: A4;
+    margin: 20mm 15mm 25mm 15mm;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Prevent table/split breaking */
+  table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Prevent SVG/diagram breaking */
+  svg {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Report sections: avoid break inside */
+  .border.rounded-lg {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
 /* ─── Tailwind RTL Utilities ──────────────────────────────────────── */
 /* These complement Tailwind's built-in RTL support */

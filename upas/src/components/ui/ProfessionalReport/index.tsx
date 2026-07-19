@@ -1,30 +1,26 @@
 /**
  * UPAS — Professional Engineering Report View
- * Phase 5C-2: Complete professional report with all 10 sections
+ * Phase 5C-2 + 5E: Complete professional report with all sections,
+ * Table of Contents, Report Branding, and Export capabilities
  *
  * Reads from:
  *   - ProfessionalReportData (generated from frozen engine output)
  *   - Phase 5B audit registries
+ *   - Settings store (branding)
  *
- * Sections:
- *   1. Cover Page
- *   2. Design Basis
- *   3. Threat Summary
- *   4. Blast Parameters
- *   5. Structural Response (diagram + trace)
- *   6. Design Results Table
- *   7. Verification Matrix
- *   8. Critical Elements
- *   9. Warnings / Limitations
- *  10. Engineering Audit Appendix
+ * Architecture Rule: This component is READ-ONLY.
+ * It calls generateProfessionalReport() which only transforms data, never recalculates.
  */
 
 import React, { useMemo } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
+import { useSettingsStore } from '../../../stores/settingsStore';
 import { buildDesignInput } from '../../../calculations/design/design-input-adapter';
 import { generateProfessionalReport } from '../../../calculations/design/professional-report';
-import { generateCalculationTraceReport } from '../../../calculations/design/calculation-trace-report';
 import type { ProfessionalReportData } from '../../../calculations/design/professional-report';
+import { openPrintView, type PrintOptions } from '../../../services/print-service';
+import { generateExportBundle, type ExportBundleOptions } from '../../../services/export-bundle';
+import { getVersionInfo } from '../../../services/version';
 import VerificationMatrix from './VerificationMatrix';
 import StructuralDiagram from './StructuralDiagram';
 
@@ -38,22 +34,32 @@ const textSecondary = 'var(--upas-text-secondary)';
 
 function SectionCard({
   title,
+  sectionNum,
   children,
   badge,
   badgeColor,
+  printBreak,
 }: {
   title: string;
+  sectionNum?: string;
   children: React.ReactNode;
   badge?: string;
   badgeColor?: string;
+  printBreak?: boolean;
 }) {
   return (
-    <div className="border rounded-lg overflow-hidden" style={{ borderColor: sectionBorder }}>
+    <div
+      className="border rounded-lg overflow-hidden"
+      style={{ borderColor: sectionBorder, breakInside: printBreak === false ? 'auto' : 'avoid' } as React.CSSProperties}
+    >
       <div
         className="px-3 py-2 border-b flex items-center justify-between"
         style={{ borderColor: sectionBorder, backgroundColor: 'var(--upas-bg-primary, #f8fafc)' }}
       >
-        <h3 className="text-xs font-bold" style={{ color: textPrimary }}>{title}</h3>
+        <h3 className="text-xs font-bold" style={{ color: textPrimary }}>
+          {sectionNum && <span className="ml-1 opacity-40">{sectionNum}.</span>}
+          {title}
+        </h3>
         {badge && (
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium"
@@ -80,6 +86,111 @@ function KVRow({ label, value, unit, color }: { label: string; value: string | n
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// TABLE OF CONTENTS (5E-4)
+// ═══════════════════════════════════════════════════════════════════════
+
+function TableOfContents({ designStatus }: { designStatus: string }) {
+  const sections = [
+    { num: '1', title: 'أساس التصميم', en: 'Design Basis' },
+    { num: '2', title: 'ملخص التهديد', en: 'Threat Summary' },
+    { num: '3', title: 'معاملات الانفجار', en: 'Blast Parameters' },
+    { num: '4', title: 'الاستجابة الإنشائية', en: 'Structural Response' },
+    { num: '5', title: 'جدول نتائج التصميم', en: 'Design Results Table' },
+    { num: '6', title: 'مصفوفة التحقق', en: 'Verification Matrix' },
+    { num: '7', title: 'العنصر الحاكم', en: 'Critical Element' },
+    { num: '8', title: 'التحذيرات والقيود', en: 'Warnings & Limitations' },
+    { num: '9', title: 'ملحق التدقيق الهندسي', en: 'Engineering Audit Appendix' },
+  ];
+
+  return (
+    <SectionCard title="فهرس المحتويات" badge={designStatus}
+      badgeColor={designStatus === 'PASS' ? '#16a34a' : '#dc2626'}>
+      <div className="space-y-0.5">
+        {sections.map((s) => (
+          <div key={s.num} className="flex justify-between items-center py-1 text-[11px] border-b"
+            style={{ borderColor: 'var(--upas-border)', borderStyle: 'dotted', borderWidth: 0.5 }}>
+            <span style={{ color: textPrimary }}>
+              <span className="font-mono ml-1 opacity-40">{s.num}.</span>
+              {s.title}
+              <span className="text-[9px] ml-1 opacity-40">({s.en})</span>
+            </span>
+            <span className="font-mono text-[10px]" style={{ color: textSecondary }}>{s.num}</span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXPORT TOOLBAR (5E-1 / 5E-7 / 5E-8)
+// ═══════════════════════════════════════════════════════════════════════
+
+function ExportToolbar({ report, projectName }: { report: ProfessionalReportData; projectName: string }) {
+  const settings = useSettingsStore.getState();
+  const [exporting, setExporting] = React.useState(false);
+
+  const printOptions: PrintOptions = {
+    report,
+    projectName,
+    organizationName: settings.report.organizationName || undefined,
+    engineerName: settings.report.engineerName || undefined,
+    footerText: settings.report.footerText || undefined,
+    showPageNumbers: settings.report.showPageNumbers,
+    showDate: settings.report.showDate,
+  };
+
+  const handlePrint = () => openPrintView(printOptions);
+
+  const handleExportBundle = async () => {
+    setExporting(true);
+    try {
+      await generateExportBundle({
+        report,
+        projectData: { name: projectName, status: report.designStatus },
+        printOptions,
+      });
+    } catch (err) {
+      console.error('Export bundle failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        onClick={handlePrint}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium
+          transition-colors cursor-pointer hover:opacity-90 border"
+        style={{ borderColor: 'var(--upas-primary)', color: 'var(--upas-primary)' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <rect x="6" y="14" width="12" height="8" />
+        </svg>
+        طباعة / PDF
+      </button>
+      <button
+        onClick={handleExportBundle}
+        disabled={exporting}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium
+          text-white transition-colors cursor-pointer hover:opacity-90 disabled:opacity-50"
+        style={{ backgroundColor: 'var(--upas-accent)' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        {exporting ? 'جاري التصدير...' : 'تصدير الحزمة الكاملة'}
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -87,6 +198,9 @@ export default function ProfessionalReport() {
   const lastFullResult = useProjectStore((s) => s.lastFullResult);
   const lastDesignResult = useProjectStore((s) => s.lastDesignResult);
   const currentProject = useProjectStore((s) => s.currentProject);
+  const settingsOrg = useSettingsStore((s) => s.report.organizationName);
+  const settingsEng = useSettingsStore((s) => s.report.engineerName);
+  const versionInfo = getVersionInfo();
 
   const report = useMemo<ProfessionalReportData | null>(() => {
     if (!lastDesignResult || !lastFullResult) return null;
@@ -114,39 +228,55 @@ export default function ProfessionalReport() {
     );
   }
 
+  const projectName = currentProject?.name ?? 'مشروع بدون اسم';
+  const today = new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+
   return (
     <div className="h-full overflow-y-auto" dir="rtl">
       <div className="p-4 space-y-3 max-w-3xl mx-auto">
-        {/* ═══ 1. COVER PAGE ═══ */}
+        {/* ═══ COVER PAGE (5E-3: Branded) ═══ */}
         <div
           className="border-2 rounded-xl p-5 text-center"
           style={{ borderColor: report.statusColor + '40', backgroundColor: report.statusColor + '06' }}
         >
+          {/* Branding Header */}
+          <div className="flex items-center justify-between mb-3 text-[10px]" style={{ color: textSecondary }}>
+            <span className="font-mono">UPAS v{versionInfo.version}</span>
+            <span>{today}</span>
+          </div>
+          {settingsOrg && (
+            <div className="text-[10px] mb-1" style={{ color: textSecondary }}>{settingsOrg}</div>
+          )}
+
           <div className="text-[10px] font-mono mb-1" style={{ color: textSecondary }}>
             UPAS — Underground Protective Structure Analysis
           </div>
           <h2 className="text-base font-bold mb-1" style={{ color: textPrimary }}>
             التقرير الهندسي الاحترافي
           </h2>
-          <h3 className="text-sm font-medium mb-3" style={{ color: report.statusColor }}>
-            {report.projectName}
+          <h3 className="text-sm font-medium mb-2" style={{ color: report.statusColor }}>
+            {projectName}
           </h3>
+          {settingsEng && (
+            <div className="text-[10px] mb-2" style={{ color: textSecondary }}>
+              المهندس: {settingsEng}
+            </div>
+          )}
           <div className="flex justify-center gap-4 text-[10px] mb-3" style={{ color: textSecondary }}>
             <span>{report.calculatedAt}</span>
             <span>|</span>
-            <span>نمط التصميم: {report.designMode === 'standard' ? 'قياسي' : 'متقدم'}</span>
+            <span>نمط التصميم: قياسي (Standard Mode)</span>
           </div>
           <div
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold"
             style={{ backgroundColor: report.statusColor + '18', color: report.statusColor }}
           >
-            {report.designStatus === 'PASS' && (
+            {report.designStatus === 'PASS' ? (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M4.5 7L6.5 9L9.5 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            )}
-            {report.designStatus !== 'PASS' && (
+            ) : (
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M5 5L9 9M9 5L5 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -159,8 +289,19 @@ export default function ProfessionalReport() {
           </div>
         </div>
 
-        {/* ═══ 2. DESIGN BASIS ═══ */}
-        <SectionCard title="أساس التصميم" badge={`${report.assumptionCount} افتراض`} badgeColor="#3b82f6">
+        {/* ═══ EXPORT TOOLBAR ═══ */}
+        <div className="flex items-center justify-between">
+          <ExportToolbar report={report} projectName={projectName} />
+          <span className="text-[10px] font-mono" style={{ color: textSecondary }}>
+            {report.equationCount} معادلة — {report.assumptionCount} افتراض
+          </span>
+        </div>
+
+        {/* ═══ TABLE OF CONTENTS (5E-4) ═══ */}
+        <TableOfContents designStatus={report.designStatus} />
+
+        {/* ═══ 1. DESIGN BASIS ═══ */}
+        <SectionCard title="أساس التصميم" sectionNum="1" badge={`${report.assumptionCount} افتراض`} badgeColor="#3b82f6">
           <div className="grid grid-cols-1 gap-0.5">
             {report.designBasis.map((row, i) => (
               <div key={i} className="flex justify-between items-center py-0.5 text-[11px]">
@@ -171,8 +312,8 @@ export default function ProfessionalReport() {
           </div>
         </SectionCard>
 
-        {/* ═══ 3. THREAT SUMMARY ═══ */}
-        <SectionCard title="ملخص التهديد">
+        {/* ═══ 2. THREAT SUMMARY ═══ */}
+        <SectionCard title="ملخص التهديد" sectionNum="2">
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
             <KVRow label="كتلة TNT المكافئة" value={report.threat.tntEquivalent.toFixed(1)} unit="kg" />
             <KVRow label="مسافة الوقوف" value={report.threat.standoff.toFixed(1)} unit="m" />
@@ -181,20 +322,20 @@ export default function ProfessionalReport() {
           </div>
         </SectionCard>
 
-        {/* ═══ 4. BLAST PARAMETERS ═══ */}
-        <SectionCard title="معاملات الانفجار">
+        {/* ═══ 3. BLAST PARAMETERS ═══ */}
+        <SectionCard title="معاملات الانفجار" sectionNum="3">
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-            <KVRow label="الضغط الحادث الأقصى" value={report.blast.incidentPressure.toFixed(1)} unit="kPa" />
-            <KVRow label="الضغط المنعكس الأقصى" value={report.blast.reflectedPressure.toFixed(1)} unit="kPa" />
-            <KVRow label="الضغط الديناميكي" value={report.blast.dynamicPressure.toFixed(1)} unit="kPa" />
-            <KVRow label="معامل الانعكاس" value={report.blast.reflectionCoefficient.toFixed(2)} />
-            <KVRow label="مدة الطور الموجب" value={report.blast.duration.toFixed(2)} unit="ms" />
-            <KVRow label="الدافع" value={report.blast.impulse.toFixed(1)} unit="kPa·ms" />
+            <KVRow label="الضغط الحادث الأقصى Pso" value={report.blast.incidentPressure.toFixed(1)} unit="kPa" />
+            <KVRow label="الضغط المنعكس الأقصى Pr" value={report.blast.reflectedPressure.toFixed(1)} unit="kPa" />
+            <KVRow label="الضغط الديناميكي q" value={report.blast.dynamicPressure.toFixed(1)} unit="kPa" />
+            <KVRow label="معامل الانعكاس Cr" value={report.blast.reflectionCoefficient.toFixed(2)} />
+            <KVRow label="مدة الطور الموجب td" value={report.blast.duration.toFixed(2)} unit="ms" />
+            <KVRow label="الدافع Impulse" value={report.blast.impulse.toFixed(1)} unit="kPa·ms" />
           </div>
         </SectionCard>
 
-        {/* ═══ 5. STRUCTURAL RESPONSE (DIAGRAM + TRACE) ═══ */}
-        <SectionCard title="الاستجابة الإنشائية" badge="مقطع عرضي" badgeColor="#8b5cf6">
+        {/* ═══ 4. STRUCTURAL RESPONSE (Enhanced Diagram 5E-5) ═══ */}
+        <SectionCard title="الاستجابة الإنشائية" sectionNum="4" badge="مقطع عرضي + بيانات" badgeColor="#8b5cf6" printBreak={false}>
           <StructuralDiagram
             roof={report.elements.roof}
             wall={report.elements.wall}
@@ -251,8 +392,8 @@ export default function ProfessionalReport() {
           </div>
         </SectionCard>
 
-        {/* ═══ 6. DESIGN RESULTS TABLE ═══ */}
-        <SectionCard title="جدول نتائج التصميم">
+        {/* ═══ 5. DESIGN RESULTS TABLE ═══ */}
+        <SectionCard title="جدول نتائج التصميم" sectionNum="5">
           <div className="overflow-x-auto">
             <table className="w-full text-[11px] border-collapse">
               <thead>
@@ -310,9 +451,10 @@ export default function ProfessionalReport() {
           </div>
         </SectionCard>
 
-        {/* ═══ 7. VERIFICATION MATRIX ═══ */}
+        {/* ═══ 6. VERIFICATION MATRIX ═══ */}
         <SectionCard
           title="مصفوفة التحقق"
+          sectionNum="6"
           badge={report.designStatus}
           badgeColor={report.statusColor}
         >
@@ -322,9 +464,10 @@ export default function ProfessionalReport() {
           />
         </SectionCard>
 
-        {/* ═══ 8. CRITICAL ELEMENTS ═══ */}
+        {/* ═══ 7. CRITICAL ELEMENTS ═══ */}
         <SectionCard
           title="العنصر الحاكم — التفاصيل"
+          sectionNum="7"
           badge={report.criticalElement.label}
           badgeColor="#f59e0b"
         >
@@ -341,10 +484,11 @@ export default function ProfessionalReport() {
           </div>
         </SectionCard>
 
-        {/* ═══ 9. WARNINGS / LIMITATIONS ═══ */}
+        {/* ═══ 8. WARNINGS / LIMITATIONS ═══ */}
         {report.warnings.length > 0 && (
           <SectionCard
             title="التحذيرات والقيود"
+            sectionNum="8"
             badge={`${report.warnings.length}`}
             badgeColor="#f59e0b"
           >
@@ -363,9 +507,10 @@ export default function ProfessionalReport() {
           </SectionCard>
         )}
 
-        {/* ═══ 10. ENGINEERING AUDIT APPENDIX ═══ */}
+        {/* ═══ 9. ENGINEERING AUDIT APPENDIX ═══ */}
         <SectionCard
           title="ملحق التدقيق الهندسي"
+          sectionNum="9"
           badge="Phase 5B"
           badgeColor="#6366f1"
         >
