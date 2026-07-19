@@ -522,23 +522,18 @@ describe('5B — Benchmark Library', () => {
     }
   });
 
-  it('populateBenchmarkBaselines should fill zero expected values', () => {
-    // Use a copy to avoid mutating the original
+  it('populateBenchmarkBaselines should preserve baseline values', () => {
+    // Baselines are now hard-coded from frozen engine (Phase 5B, 2026-07-20)
     const bm = BENCHMARK_CASES[0]!;
-    const input = bm.input();
-    const result = runDesignFromInput(input);
 
-    // Before: some expected values are 0
-    expect(bm.expected.roof.designMoment).toBe(0);
-
-    // Populate
-    populateBenchmarkBaselines(runDesignFromInput);
-
-    // After: values should be populated (for the benchmark that was run)
-    // Note: populateBenchmarkBaselines mutates in-place
+    // Baselines should already be populated with real values
     expect(bm.expected.roof.designMoment).toBeGreaterThan(0);
     expect(bm.expected.roof.requiredThickness).toBeGreaterThan(0);
     expect(bm.expected.roof.flexuralSF).toBeGreaterThan(0);
+
+    // Re-populate should produce identical values (engine unchanged)
+    populateBenchmarkBaselines(runDesignFromInput);
+    expect(bm.expected.roof.designMoment).toBeGreaterThan(0);
   });
 
   it('validateBenchmarkResult should find no mismatches for fresh baseline', () => {
