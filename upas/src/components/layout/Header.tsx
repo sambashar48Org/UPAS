@@ -8,6 +8,7 @@ const viewLabels: Record<AppView, string> = {
   analysis: 'التحليل',
   results: 'النتائج',
   settings: 'الإعدادات',
+  about: 'حول البرنامج',
   database: 'قاعدة البيانات',
 };
 

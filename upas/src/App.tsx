@@ -3,6 +3,8 @@ import Dashboard from './components/screens/Dashboard';
 import NewProject from './components/screens/NewProject';
 import AnalysisView from './components/screens/AnalysisView';
 import DatabaseView from './components/screens/DatabaseView';
+import SettingsScreen from './components/screens/Settings';
+import AboutScreen from './components/screens/About';
 import { useUIStore } from './stores/uiStore';
 
 function PlaceholderScreen({ title, description }: { title: string; description: string }) {
@@ -63,12 +65,9 @@ export default function App() {
           />
         );
       case 'settings':
-        return (
-          <PlaceholderScreen
-            title="الإعدادات"
-            description="هذه الشاشة قيد التطوير — ستتوفر قريباً"
-          />
-        );
+        return <SettingsScreen />;
+      case 'about':
+        return <AboutScreen />;
       case 'database':
         return <DatabaseView />;
       default:

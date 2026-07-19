@@ -15,6 +15,7 @@ export type AppView =
   | 'analysis'
   | 'results'
   | 'settings'
+  | 'about'
   | 'database';
 
 // ─── Database sub-views ────────────────────────────────────────────

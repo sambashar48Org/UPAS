@@ -31,9 +31,10 @@
   font-family: 'Segoe UI', Tahoma, 'Noto Sans Arabic', sans-serif;
 }
 
-/* ─── Dark mode support (future) ──────────────────────────────────── */
+/* ─── Dark mode support ──────────────────────────────────────── */
+/* System preference fallback */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.theme-light):not(.theme-dark) {
     --upas-bg-primary: #0f172a;
     --upas-bg-secondary: #1e293b;
     --upas-bg-card: #1e293b;
@@ -41,6 +42,26 @@
     --upas-text-secondary: #94a3b8;
     --upas-border: #334155;
   }
+}
+
+/* Manual dark theme */
+.theme-dark {
+  --upas-bg-primary: #0f172a;
+  --upas-bg-secondary: #1e293b;
+  --upas-bg-card: #1e293b;
+  --upas-text-primary: #f1f5f9;
+  --upas-text-secondary: #94a3b8;
+  --upas-border: #334155;
+}
+
+/* Manual light theme (explicit override of system dark) */
+.theme-light {
+  --upas-bg-primary: #f8fafc;
+  --upas-bg-secondary: #e2e8f0;
+  --upas-bg-card: #ffffff;
+  --upas-text-primary: #1e293b;
+  --upas-text-secondary: #64748b;
+  --upas-border: #cbd5e1;
 }
 
 /* ─── Base Styles ─────────────────────────────────────────────────── */

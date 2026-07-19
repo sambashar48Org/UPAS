@@ -203,3 +203,31 @@ Stage Summary:
 - 4 new files created, 2 existing files modified (design/index.ts export, AnalysisView tab wiring)
 - Professional report visible in UI report tab when design results exist
 - Freeze Gate maintained: no frozen equation or model touched
+
+---
+Task ID: Phase 5D
+Agent: main
+Task: Application Settings & About (UI Only)
+
+Work Log:
+- Created src/services/version.ts — Version Service returning app version, build date, git commit
+- Created src/stores/settingsStore.ts — Full settings store with localStorage persistence, theme/language/startup/reports/notifications/advanced sections
+- Created src/components/screens/Settings/index.tsx — Complete settings page with 6 sections (General, Appearance, Startup, Reports, Notifications, Advanced) + About modal + License modal
+- Created src/components/screens/About/index.tsx — Full-page About screen with app identity, developer info, modules grid, tech stack, engineering standards
+- Updated src/stores/uiStore.ts — Added 'about' to AppView union type
+- Updated src/App.tsx — Wired SettingsScreen and AboutScreen, removed placeholder
+- Updated src/components/layout/Sidebar.tsx — Added About icon + nav item
+- Updated src/components/layout/Header.tsx — Added 'about' label
+- Updated src/index.css — Added .theme-dark, .theme-light CSS classes for manual theme switching (system media query preserved)
+- Created src/__tests__/settings/phase5d-settings.test.ts — 35 tests covering version service, settings store CRUD, theme CSS application, persistence, reset, export/import, UI integration, freeze gate integrity
+- Zero modifications to calculations/design/analysis/engine directories
+- Zero modifications to any frozen equation or model
+
+Stage Summary:
+- 549 tests passing (514 + 35), 0 regression, 0 TypeScript errors
+- 6 new files created, 4 existing files modified (all UI/infra only)
+- Settings page: 6 sections with toggles, selects, text inputs, number inputs
+- About page: full identity card with hero, modules, tech stack, standards
+- License modal: 9 open-source libraries with MIT/Apache license display
+- Dark/Light/System theme switching with CSS custom properties
+- Freeze Gate maintained: zero connection to calculation engine
