@@ -158,3 +158,25 @@ Stage Summary:
 - 5 deliverables complete: Equation Registry, Assumptions Registry, Calculation Trace Report, Audit Export, Benchmark Library
 - Freeze Gate maintained: zero modifications to any frozen equation or model
 - Benchmark baselines hard-coded as permanent regression targets
+
+---
+Task ID: Phase 5C-1
+Agent: main
+Task: Design Review Gate — Pre-Enhancement Assessment
+
+Work Log:
+- Created docs/PHASE_5C_DESIGN_REVIEW_GATE.md — formal 3-layer freeze confirmation
+- Layer 1 (Blast Demand): 9 frozen functions confirmed — P_reflected → SDOF → DLF → w_blast → Mu/Vu
+- Layer 2 (Material Resistance): 7 frozen functions confirmed — DIF → φMn/φVn → As selection
+- Layer 3 (Verification): 7+ frozen functions confirmed — Flexure/Shear/Penetration/Deflection matrix
+- Assessed 3 candidate features: Nonlinear SDOF (high value, high risk), Cracked Stiffness (high value, medium risk), Plastic Rotation (medium value, low risk)
+- Defined dual-mode architecture: Standard Mode (frozen, certified) vs Advanced Mode (frozen + optional layers)
+- Architecture rule: advanced/ subdirectory for all new code, zero modifications to existing files
+- Created priority table: PDF Report ⭐⭐⭐⭐, Visualization ⭐⭐⭐⭐, Cracked Stiffness ⭐⭐⭐, Nonlinear SDOF ⭐⭐⭐, Plastic Rotation ⭐⭐
+- Recommended execution: 5C-2 (Report + Visualization) → 5C-3A (Cracked Stiffness) → 5C-3B (Plastic Rotation) → 5C-3C (Nonlinear SDOF)
+
+Stage Summary:
+- Gate document created at docs/PHASE_5C_DESIGN_REVIEW_GATE.md
+- 505 tests passing, 0 regression (no code modified — document only)
+- Gate verdict: OPEN FOR PHASE 5C-2
+- No frozen function touched, no existing file modified
