@@ -152,3 +152,7 @@ export type { AuditDocument, AuditPackage } from './audit-export';
 
 export { BENCHMARK_CASES, populateBenchmarkBaselines, validateBenchmarkResult } from './benchmarks';
 export type { BenchmarkCase, BenchmarkExpectedResult, BenchmarkElementExpectation } from './benchmarks';
+
+// ─── Phase 5C-2: Professional Engineering Report + Visualization ──────
+export { generateProfessionalReport } from './professional-report';
+export type { ProfessionalReportData, ProfessionalElementData, VerificationCell } from './professional-report';

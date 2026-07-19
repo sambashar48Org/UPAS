@@ -1,0 +1,1173 @@
+     1→     1→/**
+     2→     2→ * UPAS — Automated Calculation Trace Report Generator
+     3→     3→ * Phase 5B: Professional Engineering Review Package
+     4→     4→ *
+     5→     5→ * Generates a detailed, equation-traced calculation report section
+     6→     6→ * that shows the COMPLETE computation path from blast parameters
+     7→     7→ * to final reinforcement selection, with equation references.
+     8→     8→ *
+     9→     9→ * This is the "calculation sheet" that a reviewing engineer expects:
+    10→    10→ *   Input Summary → Blast Trace → SDOF Trace → Demand Trace →
+    11→    11→ *   Capacity Verification → Assumptions Reference
+    12→    12→ *
+    13→    13→ * ARCHITECTURE RULE:
+    14→    14→ *   This module reads DesignInput, DesignResult, and the registries.
+    15→    15→ *   It does NOT perform any calculations — only reads and formats
+    16→    16→ *   values that were already computed by the design engine.
+    17→    17→ *
+    18→    18→ * No frozen modules are modified.
+    19→    19→ */
+    20→    20→
+    21→    21→import type {
+    22→    22→  DesignInput,
+    23→    23→  DesignResult,
+    24→    24→  ElementDesignResult,
+    25→    25→  ElementVerificationResult,
+    26→    26→  DesignCriteria,
+    27→    27→  DesignBlastInput,
+    28→    28→  DesignElementLoad,
+    29→    29→  DesignMaterial,
+    30→    30→  DesignSoil,
+    31→    31→} from './types';
+    32→    32→
+    33→    33→import type { ReportSection, ReportContent } from '../reports';
+    34→    34→import {
+    35→    35→  EQUATION_REGISTRY,
+    36→    36→  getEquationsByCategory,
+    37→    37→  type EquationEntry,
+    38→    38→} from './equation-registry';
+    39→    39→import {
+    40→    40→  DESIGN_ASSUMPTIONS,
+    41→    41→  getAssumptionsByCategory,
+    42→    42→  type DesignAssumption,
+    43→    43→} from './design-assumptions';
+    44→    44→
+    45→    45→// ═══════════════════════════════════════════════════════════════════════
+    46→    46→// TYPES
+    47→    47→// ═══════════════════════════════════════════════════════════════════════
+    48→    48→
+    49→    49→/** Internal trace step for recording calculation values */
+    50→    50→interface TraceStep {
+    51→    51→  equationId: string;
+    52→    52→  equation: string;
+    53→    53→  source: string;
+    54→    54→  inputs: { label: string; value: string; unit: string }[];
+    55→    55→  output: { label: string; value: string; unit: string };
+    56→    56→}
+    57→    57→
+    58→    58→/** Complete calculation trace for one element */
+    59→    59→interface ElementCalculationTrace {
+    60→    60→  element: 'roof' | 'wall' | 'floor';
+    61→    61→  elementNameAr: string;
+    62→    62→  elementNameEn: string;
+    63→    63→  blastLoadSteps: TraceStep[];
+    64→    64→  sdofSteps: TraceStep[];
+    65→    65→  demandSteps: TraceStep[];
+    66→    66→  capacitySteps: TraceStep[];
+    67→    67→  verificationSteps: TraceStep[];
+    68→    68→}
+    69→    69→
+    70→    70→// ═══════════════════════════════════════════════════════════════════════
+    71→    71→// INTERNAL: TRACE COMPUTATION
+    72→    72→// ═══════════════════════════════════════════════════════════════════════
+    73→    73→
+    74→    74→const ELEMENT_NAMES: Record<string, { ar: string; en: string }> = {
+    75→    75→  roof: { ar: 'السقف', en: 'Roof' },
+    76→    76→  wall: { ar: 'الجدار', en: 'Wall' },
+    77→    77→  floor: { ar: 'الأرضية', en: 'Floor' },
+    78→    78→};
+    79→    79→
+    80→    80→/**
+    81→    81→ * Build the blast response trace steps for an element.
+    82→    82→ * These document the values that flowed from blast analysis into the design.
+    83→    83→ */
+    84→    84→function buildBlastTrace(
+    85→    85→  element: 'roof' | 'wall' | 'floor',
+    86→    86→  blast: DesignBlastInput,
+    87→    87→  elementLoad: DesignElementLoad,
+    88→    88→): TraceStep[] {
+    89→    89→  const steps: TraceStep[] = [];
+    90→    90→
+    91→    91→  const eqBLAST001 = EQUATION_REGISTRY.find(e => e.id === 'BLAST-001')!;
+    92→    92→  const peakP = element === 'roof'
+    93→    93→    ? blast.peakReflectedPressure
+    94→    94→    : element === 'wall'
+    95→    95→      ? blast.peakReflectedPressure * 0.70
+    96→    96→      : blast.peakDynamicPressure;
+    97→    97→
+    98→    98→  steps.push({
+    99→    99→    equationId: 'BLAST-001',
+   100→   100→    equation: eqBLAST001.equation,
+   101→   101→    source: eqBLAST001.source,
+   102→   102→    inputs: [
+   103→   103→      { label: 'Pr', value: blast.peakReflectedPressure.toFixed(1), unit: 'kPa' },
+   104→   104→      { label: 'q', value: blast.peakDynamicPressure.toFixed(1), unit: 'kPa' },
+   105→   105→    ],
+   106→   106→    output: { label: 'P_peak', value: peakP.toFixed(1), unit: 'kPa' },
+   107→   107→  });
+   108→   108→
+   109→   109→  steps.push({
+   110→   110→    equationId: 'BLAST-004',
+   111→   111→    equation: 'Pr = Cr x Pso',
+   112→   112→    source: 'TM 5-1300 Ch.2',
+   113→   113→    inputs: [
+   114→   114→      { label: 'Pso', value: blast.peakIncidentPressure.toFixed(1), unit: 'kPa' },
+   115→   115→      { label: 'Cr', value: (blast.peakReflectedPressure / Math.max(blast.peakIncidentPressure, 0.01)).toFixed(2), unit: '' },
+   116→   116→    ],
+   117→   117→    output: { label: 'Pr', value: blast.peakReflectedPressure.toFixed(1), unit: 'kPa' },
+   118→   118→  });
+   119→   119→
+   120→   120→  steps.push({
+   121→   121→    equationId: 'BLAST-IMP',
+   122→   122→    equation: 'I (from KB polynomials)',
+   123→   123→    source: 'TM 5-1300 / Kingery-Bulmash',
+   124→   124→    inputs: [],
+   125→   125→    output: { label: 'I', value: blast.positivePhaseImpulse.toFixed(1), unit: 'kPa*ms' },
+   126→   126→  });
+   127→   127→
+   128→   128→  steps.push({
+   129→   129→    equationId: 'BLAST-DUR',
+   130→   130→    equation: 'td (from KB polynomials)',
+   131→   131→    source: 'TM 5-1300 / Kingery-Bulmash',
+   132→   132→    inputs: [],
+   133→   133→    output: { label: 'td', value: blast.positivePhaseDuration.toFixed(2), unit: 'ms' },
+   134→   134→  });
+   135→   135→
+   136→   136→  return steps;
+   137→   137→}
+   138→   138→
+   139→   139→/**
+   140→   140→ * Build the SDOF dynamic response trace steps.
+   141→   141→ */
+   142→   142→function buildSDOFTrace(
+   143→   143→  element: 'roof' | 'wall' | 'floor',
+   144→   144→  elementLoad: DesignElementLoad,
+   145→   145→  material: DesignMaterial,
+   146→   146→): TraceStep[] {
+   147→   147→  const steps: TraceStep[] = [];
+   148→   148→  const h = elementLoad.thickness;
+   149→   149→  const L = elementLoad.span;
+   150→   150→  const rho = material.density;
+   151→   151→  const supportCondition = elementLoad.supportCondition;
+   152→   152→
+   153→   153→  // Natural period
+   154→   154→  const T = Math.sqrt(12 * rho / (material.Ec * 1e9)) * 0.063 * L * (L / Math.max(h, 0.01));
+   155→   155→  const C_val = supportCondition === 'fixed' ? 0.031 : supportCondition === 'partial_fixity' ? 0.047 : 0.063;
+   156→   156→
+   157→   157→  steps.push({
+   158→   158→    equationId: 'SDOF-001',
+   159→   159→    equation: `T = C x L x (L/h)^2   [C=${C_val}]`,
+   160→   160→    source: 'Euler-Bernoulli + Biggs Table 5-1',
+   161→   161→    inputs: [
+   162→   162→      { label: 'L', value: L.toFixed(2), unit: 'm' },
+   163→   163→      { label: 'h', value: h.toFixed(3), unit: 'm' },
+   164→   164→      { label: 'C', value: C_val.toFixed(3), unit: '' },
+   165→   165→    ],
+   166→   166→    output: { label: 'T', value: T.toFixed(2), unit: 'ms' },
+   167→   167→  });
+   168→   168→
+   169→   169→  // KLM
+   170→   170→  const KLM = supportCondition === 'fixed' ? 0.64 : supportCondition === 'partial_fixity' ? 0.71 : 0.78;
+   171→   171→  steps.push({
+   172→   172→    equationId: 'SDOF-002',
+   173→   173→    equation: `KLM = K_M / K_L = ${KLM}`,
+   174→   174→    source: 'Biggs (1964) Table 5-1',
+   175→   175→    inputs: [
+   176→   176→      { label: 'support', value: supportCondition, unit: '' },
+   177→   177→    ],
+   178→   178→    output: { label: 'KLM', value: KLM.toFixed(2), unit: '' },
+   179→   179→  });
+   180→   180→
+   181→   181→  return steps;
+   182→   182→}
+   183→   183→
+   184→   184→/**
+   185→   185→ * Build the structural demand trace steps (w, Mu, Vu, delta).
+   186→   186→ */
+   187→   187→function buildDemandTrace(
+   188→   188→  element: 'roof' | 'wall' | 'floor',
+   189→   189→  elementLoad: DesignElementLoad,
+   190→   190→  material: DesignMaterial,
+   191→   191→  result: ElementDesignResult,
+   192→   192→  criteria: DesignCriteria,
+   193→   193→): TraceStep[] {
+   194→   194→  const steps: TraceStep[] = [];
+   195→   195→  const L = elementLoad.span;
+   196→   196→  const supportCondition = elementLoad.supportCondition;
+   197→   197→  const w = result.designMoment * (supportCondition === 'fixed' ? 12 : supportCondition === 'partial_fixity' ? 10 : 8) / (L * L);
+   198→   198→
+   199→   199→  // Total design load
+   200→   200→  steps.push({
+   201→   201→    equationId: 'DEMAND-004',
+   202→   202→    equation: 'w_total = w_blast + static',
+   203→   203→    source: 'UFC 3-340-02 Ch.5',
+   204→   204→    inputs: [
+   205→   205→      { label: 'static', value: elementLoad.staticPressure.toFixed(1), unit: 'kPa' },
+   206→   206→    ],
+   207→   207→    output: { label: 'w_total', value: (w).toFixed(1), unit: 'kPa' },
+   208→   208→  });
+   209→   209→
+   210→   210→  // Design moment
+   211→   211→  const C_moment = supportCondition === 'fixed' ? 12 : supportCondition === 'partial_fixity' ? 10 : 8;
+   212→   212→  steps.push({
+   213→   213→    equationId: 'DEMAND-005',
+   214→   214→    equation: `Mu = w x L^2 / ${C_moment}`,
+   215→   215→    source: 'Structural mechanics',
+   216→   216→    inputs: [
+   217→   217→      { label: 'w', value: w.toFixed(1), unit: 'kPa' },
+   218→   218→      { label: 'L', value: L.toFixed(2), unit: 'm' },
+   219→   219→    ],
+   220→   220→    output: { label: 'Mu', value: result.designMoment.toFixed(2), unit: 'kN*m/m' },
+   221→   221→  });
+   222→   222→
+   223→   223→  // Design shear
+   224→   224→  steps.push({
+   225→   225→    equationId: 'DEMAND-006',
+   226→   226→    equation: 'Vu = w x L / 2',
+   227→   227→    source: 'Structural mechanics',
+   228→   228→    inputs: [
+   229→   229→      { label: 'w', value: w.toFixed(1), unit: 'kPa' },
+   230→   230→      { label: 'L', value: L.toFixed(2), unit: 'm' },
+   231→   231→    ],
+   232→   232→    output: { label: 'Vu', value: result.designShear.toFixed(2), unit: 'kN/m' },
+   233→   233→  });
+   234→   234→
+   235→   235→  // Deflection
+   236→   236→  steps.push({
+   237→   237→    equationId: 'DEMAND-007',
+   238→   238→    equation: 'delta = C x w x L^4 / (E x I)',
+   239→   239→    source: 'Euler-Bernoulli beam theory',
+   240→   240→    inputs: [
+   241→   241→      { label: 'E', value: (material.Ec).toFixed(0), unit: 'MPa' },
+   242→   242→      { label: 'I', value: (Math.pow(elementLoad.thickness, 3) / 12).toFixed(6), unit: 'm^4/m' },
+   243→   243→    ],
+   244→   244→    output: { label: 'delta', value: result.maxDeflection.toFixed(2), unit: 'mm' },
+   245→   245→  });
+   246→   246→
+   247→   247→  return steps;
+   248→   248→}
+   249→   249→
+   250→   250→/**
+   251→   251→ * Build the capacity verification trace steps.
+   252→   252→ */
+   253→   253→function buildCapacityTrace(
+   254→   254→  result: ElementDesignResult,
+   255→   255→  verification: ElementVerificationResult,
+   256→   256→  criteria: DesignCriteria,
+   257→   257→): TraceStep[] {
+   258→   258→  const steps: TraceStep[] = [];
+   259→   259→
+   260→   260→  // Required As
+   261→   261→  steps.push({
+   262→   262→    equationId: 'RC-002',
+   263→   263→    equation: 'As from quadratic (ACI 318-19)',
+   264→   264→    source: 'ACI 318-19',
+   265→   265→    inputs: [],
+   266→   266→    output: { label: 'As_req', value: result.requiredAs.toFixed(1), unit: 'mm^2/m' },
+   267→   267→  });
+   268→   268→
+   269→   269→  // Provided As
+   270→   270→  steps.push({
+   271→   271→    equationId: 'RC-004',
+   272→   272→    equation: 'phiMn = phi x As x fy x (d - a/2)',
+   273→   273→    source: 'ACI 318-19 Ch.22',
+   274→   274→    inputs: [
+   275→   275→      { label: 'bar', value: `T${result.mainReinforcement.barDiameter}`, unit: `@ ${result.mainReinforcement.spacing}mm` },
+   276→   276→      { label: 'As_prov', value: result.mainReinforcement.asProvided.toFixed(1), unit: 'mm^2/m' },
+   277→   277→    ],
+   278→   278→    output: { label: 'phiMn', value: (result.flexuralSafetyFactor * result.designMoment).toFixed(2), unit: 'kN*m/m' },
+   279→   279→  });
+   280→   280→
+   281→   281→  // Flexure SF
+   282→   282→  steps.push({
+   283→   283→    equationId: 'VERIFY-001',
+   284→   284→    equation: 'SF = phiMn / Mu',
+   285→   285→    source: 'UFC 3-340-02',
+   286→   286→    inputs: [
+   287→   287→      { label: 'Mu', value: result.designMoment.toFixed(2), unit: 'kN*m/m' },
+   288→   288→    ],
+   289→   289→    output: { label: 'SF_flex', value: verification.flexuralSF.toFixed(2), unit: '' },
+   290→   290→  });
+   291→   291→
+   292→   292→  // Shear SF
+   293→   293→  steps.push({
+   294→   294→    equationId: 'VERIFY-002',
+   295→   295→    equation: 'SF = phiVn / Vu',
+   296→   296→    source: 'UFC 3-340-02',
+   297→   297→    inputs: [
+   298→   298→      { label: 'Vu', value: result.designShear.toFixed(2), unit: 'kN/m' },
+   299→   299→    ],
+   300→   300→    output: { label: 'SF_shear', value: verification.shearSF.toFixed(2), unit: '' },
+   301→   301→  });
+   302→   302→
+   303→   303→  return steps;
+   304→   304→}
+   305→   305→
+   306→   306→// ═══════════════════════════════════════════════════════════════════════
+   307→   307→// FORMATTERS
+   308→   308→// ═══════════════════════════════════════════════════════════════════════
+   309→   309→
+   310→   310→/** Format a trace step into ReportContent items */
+   311→   311→function formatTraceStep(step: TraceStep): ReportContent[] {
+   312→   312→  const items: ReportContent[] = [];
+   313→   313→
+   314→   314→  items.push({
+   315→   315→    type: 'key-value',
+   316→   316→    keyAr: `[${step.equationId}] ${step.equation}`,
+   317→   317→    keyEn: `[${step.equationId}] ${step.equation}`,
+   318→   318→    value: step.source,
+   319→   319→  });
+   320→   320→
+   321→   321→  for (const inp of step.inputs) {
+   322→   322→    items.push({
+   323→   323→      type: 'key-value',
+   324→   324→      keyAr: `  مدخل: ${inp.label}`,
+   325→   325→      keyEn: `  Input: ${inp.label}`,
+   326→   326→      value: inp.value,
+   327→   327→      unit: inp.unit,
+   328→   328→    });
+   329→   329→  }
+   330→   330→
+   331→   331→  items.push({
+   332→   332→    type: 'key-value',
+   333→   333→    keyAr: `  ناتج: ${step.output.label}`,
+   334→   334→    keyEn: `  Output: ${step.output.label}`,
+   335→   335→    value: step.output.value,
+   336→   336→    unit: step.output.unit,
+   337→   337→  });
+   338→   338→
+   339→   339→  return items;
+   340→   340→}
+   341→   341→
+   342→   342→// ═══════════════════════════════════════════════════════════════════════
+   343→   343→// SECTION GENERATORS
+   344→   344→// ═══════════════════════════════════════════════════════════════════════
+   345→   345→
+   346→   346→/**
+   347→   347→ * Generate the Input Summary section with design criteria.
+   348→   348→ */
+   349→   349→function generateDesignInputSection(designInput: DesignInput): ReportSection {
+   350→   350→  const content: ReportContent[] = [
+   351→   351→    {
+   352→   352→      type: 'paragraph',
+   353→   353→      textAr: 'ملخص مدخلات التصميم الإنشائي — المعايير والمواد والأبعاد المستخدمة في محرك التصميم.',
+   354→   354→      textEn: 'Summary of structural design inputs — criteria, materials, and dimensions used by the design engine.',
+   355→   355→    },
+   356→   356→    { type: 'divider' },
+   357→   357→  ];
+   358→   358→
+   359→   359→  // Design Criteria
+   360→   360→  const c = designInput.criteria;
+   361→   361→  content.push({
+   362→   362→    type: 'key-value',
+   363→   363→    keyAr: 'عامل الأمان المستهدف',
+   364→   364→    keyEn: 'Target Safety Factor',
+   365→   365→    value: `${c.targetSafetyFactor}`,
+   366→   366→  });
+   367→   367→  content.push({
+   368→   368→    type: 'key-value',
+   369→   369→    keyAr: 'استجابة بلاستيكية',
+   370→   370→    keyEn: 'Plastic Response Allowed',
+   371→   371→    value: c.allowPlasticResponse ? 'نعم / Yes' : 'لا / No',
+   372→   372→  });
+   373→   373→  content.push({
+   374→   374→    type: 'key-value',
+   375→   375→    keyAr: 'درجة الفولاذ fy',
+   376→   376→    keyEn: 'Steel Grade fy',
+   377→   377→    value: `${c.steelGrade}`,
+   378→   378→    unit: 'MPa',
+   379→   379→  });
+   380→   380→  content.push({
+   381→   381→    type: 'key-value',
+   382→   382→    keyAr: 'غطاء الخرسانة',
+   383→   383→    keyEn: 'Concrete Cover',
+   384→   384→    value: `${(c.concreteCover * 1000).toFixed(0)}`,
+   385→   385→    unit: 'mm',
+   386→   386→  });
+   387→   387→  content.push({
+   388→   388→    type: 'key-value',
+   389→   389→    keyAr: 'نسبة الانحراف القصوى',
+   390→   390→    keyEn: 'Max Deflection Ratio',
+   391→   391→    value: `${(c.maxDeflectionRatio * 1000).toFixed(2)}‰`,
+   392→   392→  });
+   393→   393→
+   394→   394→  content.push({ type: 'divider' });
+   395→   395→
+   396→   396→  // Material
+   397→   397→  const mat = designInput.elements.roof.material;
+   398→   398→  content.push({
+   399→   399→    type: 'key-value',
+   400→   400→    keyAr: "مقاومة الضغط fc'",
+   401→   401→    keyEn: "Compressive Strength fc'",
+   402→   402→    value: `${mat.fpc}`,
+   403→   403→    unit: 'MPa',
+   404→   404→  });
+   405→   405→  content.push({
+   406→   406→    type: 'key-value',
+   407→   407→    keyAr: 'معامل المرونة Ec',
+   408→   408→    keyEn: 'Modulus of Elasticity Ec',
+   409→   409→    value: `${mat.Ec}`,
+   410→   410→    unit: 'MPa',
+   411→   411→  });
+   412→   412→  content.push({
+   413→   413→    type: 'key-value',
+   414→   414→    keyAr: 'DIF الخرسانة (ضغط)',
+   415→   415→    keyEn: 'Concrete DIF (compressive)',
+   416→   416→    value: `${mat.difCompressive}`,
+   417→   417→  });
+   418→   418→
+   419→   419→  return {
+   420→   420→    id: 'calc-design-inputs',
+   421→   421→    titleAr: 'مدخلات التصميم',
+   422→   422→    titleEn: 'Design Inputs',
+   423→   423→    severity: 'neutral',
+   424→   424→    content,
+   425→   425→  };
+   426→   426→}
+   427→   427→
+   428→   428→/**
+   429→   429→ * Generate the Blast Response Trace section.
+   430→   430→ */
+   431→   431→function generateBlastTraceSection(designInput: DesignInput): ReportSection {
+   432→   432→  const blast = designInput.blast;
+   433→   433→  const content: ReportContent[] = [
+   434→   434→    {
+   435→   435→      type: 'paragraph',
+   436→   436→      textAr: 'مسار الاستجابة الانفجارية — من الضغط الحادث إلى الضغط المنعكس والنبضة الديناميكية.',
+   437→   437→      textEn: 'Blast response trace — from incident pressure to reflected pressure and dynamic impulse.',
+   438→   438→    },
+   439→   439→    { type: 'divider' },
+   440→   440→  ];
+   441→   441→
+   442→   442→  content.push({
+   443→   443→    type: 'key-value',
+   444→   444→    keyAr: 'كتلة TNT المكافئة',
+   445→   445→    keyEn: 'TNT Equivalent Mass',
+   446→   446→    value: `${blast.tntEquivalentMass.toFixed(1)}`,
+   447→   447→    unit: 'kg',
+   448→   448→  });
+   449→   449→  content.push({
+   450→   450→    type: 'key-value',
+   451→   451→    keyAr: 'المسافة المقيسة Z',
+   452→   452→    keyEn: 'Scaled Distance Z',
+   453→   453→    value: `${blast.scaledDistance.toFixed(3)}`,
+   454→   454→    unit: 'm/kg^(1/3)',
+   455→   455→  });
+   456→   456→  content.push({ type: 'divider' });
+   457→   457→
+   458→   458→  content.push({
+   459→   459→    type: 'key-value',
+   460→   460→    keyAr: '[BLAST-002] الضغط الحادث Pso',
+   461→   461→    keyEn: '[BLAST-002] Incident Pressure Pso',
+   462→   462→    value: `${blast.peakIncidentPressure.toFixed(1)}`,
+   463→   463→    unit: 'kPa',
+   464→   464→  });
+   465→   465→  content.push({
+   466→   466→    type: 'key-value',
+   467→   467→    keyAr: '[BLAST-003/004] معامل الانعكاس Cr',
+   468→   468→    keyEn: '[BLAST-003/004] Reflection Coefficient Cr',
+   469→   469→    value: `${(blast.peakReflectedPressure / Math.max(blast.peakIncidentPressure, 0.01)).toFixed(2)}`,
+   470→   470→  });
+   471→   471→  content.push({
+   472→   472→    type: 'key-value',
+   473→   473→    keyAr: '[BLAST-004] الضغط المنعكس Pr',
+   474→   474→    keyEn: '[BLAST-004] Reflected Pressure Pr',
+   475→   475→    value: `${blast.peakReflectedPressure.toFixed(1)}`,
+   476→   476→    unit: 'kPa',
+   477→   477→  });
+   478→   478→  content.push({
+   479→   479→    type: 'key-value',
+   480→   480→    keyAr: 'الضغط الديناميكي q',
+   481→   481→    keyEn: 'Dynamic Pressure q',
+   482→   482→    value: `${blast.peakDynamicPressure.toFixed(1)}`,
+   483→   483→    unit: 'kPa',
+   484→   484→  });
+   485→   485→  content.push({ type: 'divider' });
+   486→   486→
+   487→   487→  content.push({
+   488→   488→    type: 'key-value',
+   489→   489→    keyAr: 'الدافع (النبضة) I',
+   490→   490→    keyEn: 'Impulse I',
+   491→   491→    value: `${blast.positivePhaseImpulse.toFixed(1)}`,
+   492→   492→    unit: 'kPa*ms',
+   493→   493→  });
+   494→   494→  content.push({
+   495→   495→    type: 'key-value',
+   496→   496→    keyAr: 'مدة الطور الموجب td',
+   497→   497→    keyEn: 'Positive Phase Duration td',
+   498→   498→    value: `${blast.positivePhaseDuration.toFixed(2)}`,
+   499→   499→    unit: 'ms',
+   500→   500→  });
+   501→   501→
+   502→   502→  return {
+   503→   503→    id: 'calc-blast-trace',
+   504→   504→    titleAr: 'مسار الاستجابة الانفجارية',
+   505→   505→    titleEn: 'Blast Response Trace',
+   506→   506→    severity: 'neutral',
+   507→   507→    content,
+   508→   508→  };
+   509→   509→}
+   510→   510→
+   511→   511→/**
+   512→   512→ * Generate the Structural Demand Trace section for all elements.
+   513→   513→ */
+   514→   514→function generateDemandTraceSection(
+   515→   515→  designInput: DesignInput,
+   516→   516→  designResult: DesignResult,
+   517→   517→): ReportSection {
+   518→   518→  const content: ReportContent[] = [
+   519→   519→    {
+   520→   520→      type: 'paragraph',
+   521→   521→      textAr: 'مسار الطلب الإنشائي لكل عنصر — من الحمل الديناميكي المكافئ إلى عزم الانحناء وقوة القص والتسليح المطلوب.',
+   522→   522→      textEn: 'Structural demand trace for each element — from equivalent dynamic load to design moment, shear, and required reinforcement.',
+   523→   523→    },
+   524→   524→    { type: 'divider' },
+   525→   525→  ];
+   526→   526→
+   527→   527→  for (const key of ['roof', 'wall', 'floor'] as const) {
+   528→   528→    const labels = ELEMENT_NAMES[key]!;
+   529→   529→    const elResult: ElementDesignResult = designResult[key];
+   530→   530→    const elLoad: DesignElementLoad = designInput.elements[key];
+   531→   531→    const elVer: ElementVerificationResult = designResult.verification.elements[key];
+   532→   532→
+   533→   533→    content.push({
+   534→   534→      type: 'paragraph',
+   535→   535→      textAr: `── ${labels.ar} / ${labels.en} ──`,
+   536→   536→      textEn: `── ${labels.en} ──`,
+   537→   537→    });
+   538→   538→
+   539→   539→    // SDOF trace
+   540→   540→    const h = elLoad.thickness;
+   541→   541→    const L = elLoad.span;
+   542→   542→    const supportCondition = elLoad.supportCondition;
+   543→   543→    const C_val = supportCondition === 'fixed' ? 0.031 : supportCondition === 'partial_fixity' ? 0.047 : 0.063;
+   544→   544→    const KLM = supportCondition === 'fixed' ? 0.64 : supportCondition === 'partial_fixity' ? 0.71 : 0.78;
+   545→   545→    const T = C_val * L * Math.pow(L / Math.max(h, 0.01), 2);
+   546→   546→    const tdOverT = designInput.blast.positivePhaseDuration / Math.max(T, 0.01);
+   547→   547→
+   548→   548→    content.push({
+   549→   549→      type: 'key-value',
+   550→   550→      keyAr: `[SDOF-001] الفترة الطبيعية T — ${labels.ar}`,
+   551→   551→      keyEn: `[SDOF-001] Natural Period T — ${labels.en}`,
+   552→   552→      value: `${T.toFixed(2)}`,
+   553→   553→      unit: 'ms',
+   554→   554→    });
+   555→   555→    content.push({
+   556→   556→      type: 'key-value',
+   557→   557→      keyAr: `[SDOF-002] KLM`,
+   558→   558→      keyEn: `[SDOF-002] KLM`,
+   559→   559→      value: `${KLM.toFixed(2)}`,
+   560→   560→    });
+   561→   561→    content.push({
+   562→   562→      type: 'key-value',
+   563→   563→      keyAr: `[SDOF-003] td/T`,
+   564→   564→      keyEn: `[SDOF-003] td/T`,
+   565→   565→      value: `${tdOverT.toFixed(3)}`,
+   566→   566→      unit: tdOverT < 0.2 ? ' (impulsive)' : ' (quasi-static)',
+   567→   567→    });
+   568→   568→
+   569→   569→    content.push({ type: 'divider' });
+   570→   570→
+   571→   571→    // Demand values
+   572→   572→    content.push({
+   573→   573→      type: 'key-value',
+   574→   574→      keyAr: `[DEMAND-005] عزم الانحناء Mu — ${labels.ar}`,
+   575→   575→      keyEn: `[DEMAND-005] Design Moment Mu — ${labels.en}`,
+   576→   576→      value: `${elResult.designMoment.toFixed(2)}`,
+   577→   577→      unit: 'kN*m/m',
+   578→   578→    });
+   579→   579→    content.push({
+   580→   580→      type: 'key-value',
+   581→   581→      keyAr: `[DEMAND-006] قوة القص Vu — ${labels.ar}`,
+   582→   582→      keyEn: `[DEMAND-006] Design Shear Vu — ${labels.en}`,
+   583→   583→      value: `${elResult.designShear.toFixed(2)}`,
+   584→   584→      unit: 'kN/m',
+   585→   585→    });
+   586→   586→    content.push({
+   587→   587→      type: 'key-value',
+   588→   588→      keyAr: `[DEMAND-007] الانحراف delta — ${labels.ar}`,
+   589→   589→      keyEn: `[DEMAND-007] Deflection delta — ${labels.en}`,
+   590→   590→      value: `${elResult.maxDeflection.toFixed(2)}`,
+   591→   591→      unit: 'mm',
+   592→   592→    });
+   593→   593→
+   594→   594→    content.push({ type: 'divider' });
+   595→   595→
+   596→   596→    // Reinforcement
+   597→   597→    content.push({
+   598→   598→      type: 'key-value',
+   599→   599→      keyAr: `[RC-002] As المطلوب — ${labels.ar}`,
+   600→   600→      keyEn: `[RC-002] As Required — ${labels.en}`,
+   601→   601→      value: `${elResult.requiredAs.toFixed(1)}`,
+   602→   602→      unit: 'mm^2/m',
+   603→   603→    });
+   604→   604→    content.push({
+   605→   605→      type: 'key-value',
+   606→   606→      keyAr: `[RC-004] As المقدم — ${labels.ar}`,
+   607→   607→      keyEn: `[RC-004] As Provided — ${labels.en}`,
+   608→   608→      value: `${elResult.mainReinforcement.asProvided.toFixed(1)}`,
+   609→   609→      unit: `mm^2/m (T${elResult.mainReinforcement.barDiameter} @ ${elResult.mainReinforcement.spacing}mm)`,
+   610→   610→    });
+   611→   611→
+   612→   612→    content.push({ type: 'divider' });
+   613→   613→  }
+   614→   614→
+   615→   615→  // Remove trailing divider
+   616→   616→  if (content.length > 0 && content[content.length - 1]?.type === 'divider') {
+   617→   617→    content.pop();
+   618→   618→  }
+   619→   619→
+   620→   620→  return {
+   621→   621→    id: 'calc-demand-trace',
+   622→   622→    titleAr: 'مسار الطلب الإنشائي',
+   623→   623→    titleEn: 'Structural Demand Trace',
+   624→   624→    severity: 'neutral',
+   625→   625→    content,
+   626→   626→  };
+   627→   627→}
+   628→   628→
+   629→   629→/**
+   630→   630→ * Generate the Capacity Verification Table section.
+   631→   631→ */
+   632→   632→function generateVerificationTableSection(
+   633→   633→  designInput: DesignInput,
+   634→   634→  designResult: DesignResult,
+   635→   635→): ReportSection {
+   636→   636→  const criteria = designInput.criteria;
+   637→   637→  const content: ReportContent[] = [
+   638→   638→    {
+   639→   639→      type: 'paragraph',
+   640→   640→      textAr: 'جدول التحقق من القدرة — مقارنة الطلب بالقدرة لكل عنصر وكل نمط فشل مع معادلة المصدر.',
+   641→   641→      textEn: 'Capacity verification table — demand vs. capacity comparison for each element and failure mode with source equation.',
+   642→   642→    },
+   643→   643→    { type: 'divider' },
+   644→   644→  ];
+   645→   645→
+   646→   646→  // Verification table
+   647→   647→  const headers = [
+   648→   648→    'العنصر / Element',
+   649→   649→    'التحقق / Check',
+   650→   650→    'المعادلة / Eq.',
+   651→   651→    'الطلب / Demand',
+   652→   652→    'القدرة / Capacity',
+   653→   653→    'عامل الأمان / SF',
+   654→   654→    'المطلوب / Req.',
+   655→   655→    'الحالة / Status',
+   656→   656→  ];
+   657→   657→
+   658→   658→  const rows: string[][] = [];
+   659→   659→  for (const key of ['roof', 'wall', 'floor'] as const) {
+   660→   660→    const labels = ELEMENT_NAMES[key]!;
+   661→   661→    const el = designResult[key];
+   662→   662→    const ver = designResult.verification.elements[key];
+   663→   663→    const phiMn = el.flexuralSafetyFactor * el.designMoment;
+   664→   664→    const phiVc = el.shearSafetyFactor * el.designShear;
+   665→   665→
+   666→   666→    rows.push([
+   667→   667→      `${labels.ar} / ${labels.en}`,
+   668→   668→      'انحناء / Flexure',
+   669→   669→      'VERIFY-001',
+   670→   670→      `${el.designMoment.toFixed(2)} kN*m/m`,
+   671→   671→      `${phiMn.toFixed(2)} kN*m/m`,
+   672→   672→      `${ver.flexuralSF.toFixed(2)}`,
+   673→   673→      `>= ${criteria.targetSafetyFactor}`,
+   674→   674→      ver.flexuralPass ? 'PASS' : 'FAIL',
+   675→   675→    ]);
+   676→   676→
+   677→   677→    rows.push([
+   678→   678→      `${labels.ar} / ${labels.en}`,
+   679→   679→      'قص / Shear',
+   680→   680→      'VERIFY-002',
+   681→   681→      `${el.designShear.toFixed(2)} kN/m`,
+   682→   682→      `${phiVc.toFixed(2)} kN/m`,
+   683→   683→      `${ver.shearSF.toFixed(2)}`,
+   684→   684→      `>= ${criteria.targetSafetyFactor}`,
+   685→   685→      ver.shearPass ? 'PASS' : 'FAIL',
+   686→   686→    ]);
+   687→   687→
+   688→   688→    rows.push([
+   689→   689→      `${labels.ar} / ${labels.en}`,
+   690→   690→      'اختراق / Penetration',
+   691→   691→      'VERIFY-003',
+   692→   692→      '-',
+   693→   693→      '-',
+   694→   694→      ver.penetrationSF === Infinity ? 'N/A' : `${ver.penetrationSF.toFixed(2)}`,
+   695→   695→      '>= 1.0',
+   696→   696→      ver.penetrationPass ? 'PASS' : 'FAIL',
+   697→   697→    ]);
+   698→   698→
+   699→   699→    rows.push([
+   700→   700→      `${labels.ar} / ${labels.en}`,
+   701→   701→      'انحراف / Deflection',
+   702→   702→      'VERIFY-004',
+   703→   703→      `${el.maxDeflection.toFixed(2)} mm`,
+   704→   704→      `${(designInput.elements[key].span * criteria.maxDeflectionRatio * 1000).toFixed(2)} mm`,
+   705→   705→      `${(ver.deflectionRatio * 1000).toFixed(2)}‰`,
+   706→   706→      `<= ${(criteria.maxDeflectionRatio * 1000).toFixed(2)}‰`,
+   707→   707→      ver.deflectionPass ? 'PASS' : 'FAIL',
+   708→   708→    ]);
+   709→   709→  }
+   710→   710→
+   711→   711→  content.push({
+   712→   712→    type: 'table',
+   713→   713→    headers,
+   714→   714→    rows,
+   715→   715→    captionAr: 'جدول التحقق الشامل من القدرة مع مراجع المعادلات',
+   716→   716→    captionEn: 'Comprehensive capacity verification table with equation references',
+   717→   717→  });
+   718→   718→
+   719→   719→  // Governing mode
+   720→   720→  const govElem = ELEMENT_NAMES[designResult.verification.governingElement]!;
+   721→   721→  const modeAr = designResult.verification.governingMode === 'flexure' ? 'انحناء'
+   722→   722→    : designResult.verification.governingMode === 'shear' ? 'قص'
+   723→   723→    : designResult.verification.governingMode === 'penetration' ? 'اختراق'
+   724→   724→    : designResult.verification.governingMode === 'deflection' ? 'انحراف'
+   725→   725→    : 'لا يوجد';
+   726→   726→
+   727→   727→  content.push({ type: 'divider' });
+   728→   728→  content.push({
+   729→   729→    type: 'key-value',
+   730→   730→    keyAr: 'العنصر الحاكم',
+   731→   731→    keyEn: 'Governing Element',
+   732→   732→    value: `${govElem.ar} / ${govElem.en}`,
+   733→   733→  });
+   734→   734→  content.push({
+   735→   735→    type: 'key-value',
+   736→   736→    keyAr: 'نمط الفشل الحاكم',
+   737→   737→    keyEn: 'Governing Failure Mode',
+   738→   738→    value: modeAr,
+   739→   739→  });
+   740→   740→
+   741→   741→  const severity = designResult.designStatus === 'PASS' ? 'success'
+   742→   742→    : designResult.designStatus === 'FAIL' ? 'critical' : 'warning';
+   743→   743→
+   744→   744→  return {
+   745→   745→    id: 'calc-verification-table',
+   746→   746→    titleAr: 'جدول التحقق من القدرة',
+   747→   747→    titleEn: 'Capacity Verification Table',
+   748→   748→    severity,
+   749→   749→    content,
+   750→   750→  };
+   751→   751→}
+   752→   752→
+   753→   753→/**
+   754→   754→ * Generate the Equation Reference section.
+   755→   755→ * Lists all equations used with their sources.
+   756→   756→ */
+   757→   757→function generateEquationReferenceSection(): ReportSection {
+   758→   758→  const content: ReportContent[] = [
+   759→   759→    {
+   760→   760→      type: 'paragraph',
+   761→   761→      textAr: 'مرجع المعادلات المستخدمة في محرك التصميم — مع المصدر الهندسي والوحدات.',
+   762→   762→      textEn: 'Equations used in the design engine — with engineering references and units.',
+   763→   763→    },
+   764→   764→    { type: 'divider' },
+   765→   765→  ];
+   766→   766→
+   767→   767→  // Group by category
+   768→   768→  const categories = [
+   769→   769→    { key: 'blast-loading', nameAr: 'أحمال الانفجار', nameEn: 'Blast Loading' },
+   770→   770→    { key: 'sdof-dynamics', nameAr: 'الاستجابة الديناميكية', nameEn: 'SDOF Dynamics' },
+   771→   771→    { key: 'structural-demand', nameAr: 'الطلب الإنشائي', nameEn: 'Structural Demand' },
+   772→   772→    { key: 'reinforcement-design', nameAr: 'تصميم التسليح', nameEn: 'Reinforcement Design' },
+   773→   773→    { key: 'capacity-verification', nameAr: 'التحقق من القدرة', nameEn: 'Capacity Verification' },
+   774→   774→    { key: 'earth-pressure', nameAr: 'ضغط التربة', nameEn: 'Earth Pressure' },
+   775→   775→    { key: 'soil-attenuation', nameAr: 'تخفيف التربة', nameEn: 'Soil Attenuation' },
+   776→   776→    { key: 'material-properties', nameAr: 'خصائص المواد', nameEn: 'Material Properties' },
+   777→   777→  ] as const;
+   778→   778→
+   779→   779→  for (const cat of categories) {
+   780→   780→    const eqs = getEquationsByCategory(cat.key as never);
+   781→   781→    if (eqs.length === 0) continue;
+   782→   782→
+   783→   783→    content.push({
+   784→   784→      type: 'paragraph',
+   785→   785→      textAr: `── ${cat.nameAr} / ${cat.nameEn} (${eqs.length}) ──`,
+   786→   786→      textEn: `── ${cat.nameEn} (${eqs.length}) ──`,
+   787→   787→    });
+   788→   788→
+   789→   789→    for (const eq of eqs) {
+   790→   790→      content.push({
+   791→   791→        type: 'key-value',
+   792→   792→        keyAr: `[${eq.id}] ${eq.name}`,
+   793→   793→        keyEn: `[${eq.id}] ${eq.name}`,
+   794→   794→        value: eq.source,
+   795→   795→      });
+   796→   796→    }
+   797→   797→
+   798→   798→    content.push({ type: 'divider' });
+   799→   799→  }
+   800→   800→
+   801→   801→  // Remove trailing divider
+   802→   802→  if (content.length > 0 && content[content.length - 1]?.type === 'divider') {
+   803→   803→    content.pop();
+   804→   804→  }
+   805→   805→
+   806→   806→  return {
+   807→   807→    id: 'calc-equation-reference',
+   808→   808→    titleAr: 'مرجع المعادلات',
+   809→   809→    titleEn: 'Equation Reference',
+   810→   810→    severity: 'neutral',
+   811→   811→    content,
+   812→   812→  };
+   813→   813→}
+   814→   814→
+   815→   815→/**
+   816→   816→ * Generate the Design Assumptions section.
+   817→   817→ * Lists all assumptions with their impact levels.
+   818→   818→ */
+   819→   819→function generateAssumptionsSection(): ReportSection {
+   820→   820→  const content: ReportContent[] = [
+   821→   821→    {
+   822→   822→      type: 'paragraph',
+   823→   823→      textAr: 'الافتراضات المستخدمة في محرك التصميم — مع التقييم ودرجة التأثير.',
+   824→   824→      textEn: 'Assumptions used in the design engine — with rationale and impact assessment.',
+   825→   825→    },
+   826→   826→    { type: 'divider' },
+   827→   827→  ];
+   828→   828→
+   829→   829→  // Group by category
+   830→   830→  const catGroups = [
+   831→   831→    { key: 'boundary-conditions', nameAr: 'الشروط الحدية', nameEn: 'Boundary Conditions' },
+   832→   832→    { key: 'material-behavior', nameAr: 'سلوك المواد', nameEn: 'Material Behavior' },
+   833→   833→    { key: 'dynamic-response', nameAr: 'الاستجابة الديناميكية', nameEn: 'Dynamic Response' },
+   834→   834→    { key: 'loading', nameAr: 'الأحمال', nameEn: 'Loading' },
+   835→   835→    { key: 'safety', nameAr: 'السلامة', nameEn: 'Safety' },
+   836→   836→    { key: 'soil-interaction', nameAr: 'التفاعل مع التربة', nameEn: 'Soil Interaction' },
+   837→   837→    { key: 'analysis-method', nameAr: 'طريقة التحليل', nameEn: 'Analysis Method' },
+   838→   838→  ] as const;
+   839→   839→
+   840→   840→  // Table of all assumptions
+   841→   841→  const headers = ['المعرف / ID', 'الافتراض / Assumption', 'التأثير / Impact', 'الموقع / Location'];
+   842→   842→  const rows: string[][] = [];
+   843→   843→
+   844→   844→  for (const a of DESIGN_ASSUMPTIONS) {
+   845→   845→    rows.push([
+   846→   846→      a.id,
+   847→   847→      a.name,
+   848→   848→      a.impact,
+   849→   849→      a.location.split(':')[0] ?? a.location,
+   850→   850→    ]);
+   851→   851→  }
+   852→   852→
+   853→   853→  content.push({
+   854→   854→    type: 'table',
+   855→   855→    headers,
+   856→   856→    rows,
+   857→   857→    captionAr: 'سجل الافتراضات الكامل — إجمالي ' + DESIGN_ASSUMPTIONS.length + ' افتراض',
+   858→   858→    captionEn: 'Complete assumptions registry — ' + DESIGN_ASSUMPTIONS.length + ' assumptions total',
+   859→   859→  });
+   860→   860→
+   861→   861→  return {
+   862→   862→    id: 'calc-assumptions',
+   863→   863→    titleAr: 'افتراضات التصميم',
+   864→   864→    titleEn: 'Design Assumptions',
+   865→   865→    severity: 'neutral',
+   866→   866→    content,
+   867→   867→  };
+   868→   868→}
+   869→   869→
+   870→   870→// ═══════════════════════════════════════════════════════════════════════
+   871→   871→// MAIN API
+   872→   872→// ═══════════════════════════════════════════════════════════════════════
+   873→   873→
+   874→   874→/**
+   875→   875→ * Generate the complete Calculation Trace Report.
+   876→   876→ *
+   877→   877→ * Produces a multi-section report showing the full engineering
+   878→   878→ * calculation path with equation references, input/output values,
+   879→   879→ * and verification tables.
+   880→   880→ *
+   881→   881→ * Sections:
+   882→   882→ *   1. Design Inputs (criteria, material, geometry)
+   883→   883→ *   2. Blast Response Trace (Pso → Pr → I → td)
+   884→   884→ *   3. Structural Demand Trace (SDOF → w → Mu/Vu/δ → As)
+   885→   885→ *   4. Capacity Verification Table (Demand vs. Capacity with SF)
+   886→   886→ *   5. Equation Reference (all equations with sources)
+   887→   887→ *   6. Design Assumptions (all assumptions with impact)
+   888→   888→ *
+   889→   889→ * @param designInput  - The design engine input
+   890→   890→ * @param designResult - The design engine result
+   891→   891→ * @returns Array of ReportSections
+   892→   892→ */
+   893→   893→export function generateCalculationTraceReport(
+   894→   894→  designInput: DesignInput,
+   895→   895→  designResult: DesignResult,
+   896→   896→): ReportSection[] {
+   897→   897→  const sections: ReportSection[] = [];
+   898→   898→
+   899→   899→  // 1. Design Inputs
+   900→   900→  sections.push(generateDesignInputSection(designInput));
+   901→   901→
+   902→   902→  // 2. Blast Response Trace
+   903→   903→  sections.push(generateBlastTraceSection(designInput));
+   904→   904→
+   905→   905→  // 3. Structural Demand Trace
+   906→   906→  sections.push(generateDemandTraceSection(designInput, designResult));
+   907→   907→
+   908→   908→  // 4. Capacity Verification Table
+   909→   909→  sections.push(generateVerificationTableSection(designInput, designResult));
+   910→   910→
+   911→   911→  // 5. Equation Reference
+   912→   912→  sections.push(generateEquationReferenceSection());
+   913→   913→
+   914→   914→  // 6. Design Assumptions
+   915→   915→  sections.push(generateAssumptionsSection());
+   916→   916→
+   917→   917→  return sections;
+   918→   918→}
+   919→   919→
+   920→   920→/**
+   921→   921→ * Generate a summary trace for a single element.
+   922→   922→ * Useful for detailed per-element calculation sheets.
+   923→   923→ */
+   924→   924→export function generateElementTraceSheet(
+   925→   925→  element: 'roof' | 'wall' | 'floor',
+   926→   926→  designInput: DesignInput,
+   927→   927→  designResult: DesignResult,
+   928→   928→): ReportSection {
+   929→   929→  const labels = ELEMENT_NAMES[element]!;
+   930→   930→  const elResult: ElementDesignResult = designResult[element];
+   931→   931→  const elLoad: DesignElementLoad = designInput.elements[element];
+   932→   932→  const elVer: ElementVerificationResult = designResult.verification.elements[element];
+   933→   933→  const mat: DesignMaterial = elLoad.material;
+   934→   934→  const criteria: DesignCriteria = designInput.criteria;
+   935→   935→
+   936→   936→  const content: ReportContent[] = [
+   937→   937→    {
+   938→   938→      type: 'paragraph',
+   939→   939→      textAr: `ورقة الحساب التفصيلية لعنصر ${labels.ar} — مسار كامل من المدخلات إلى النتائج مع مراجع المعادلات.`,
+   940→   940→      textEn: `Detailed calculation sheet for ${labels.en} element — complete path from inputs to results with equation references.`,
+   941→   941→    },
+   942→   942→    { type: 'divider' },
+   943→   943→  ];
+   944→   944→
+   945→   945→  // Geometry
+   946→   946→  content.push({
+   947→   947→    type: 'key-value',
+   948→   948→    keyAr: 'البُعد',
+   949→   949→    keyEn: 'Span',
+   950→   950→    value: `${elLoad.span.toFixed(2)}`,
+   951→   951→    unit: 'm',
+   952→   952→  });
+   953→   953→  content.push({
+   954→   954→    type: 'key-value',
+   955→   955→    keyAr: 'السماكة الحالية',
+   956→   956→    keyEn: 'Existing Thickness',
+   957→   957→    value: `${(elResult.existingThickness * 1000).toFixed(0)}`,
+   958→   958→    unit: 'mm',
+   959→   959→  });
+   960→   960→  content.push({
+   961→   961→    type: 'key-value',
+   962→   962→    keyAr: 'السماكة المطلوبة',
+   963→   963→    keyEn: 'Required Thickness',
+   964→   964→    value: `${(elResult.requiredThickness * 1000).toFixed(0)}`,
+   965→   965→    unit: 'mm',
+   966→   966→  });
+   967→   967→  content.push({
+   968→   968→    type: 'key-value',
+   969→   969→    keyAr: 'حالة الدعامة',
+   970→   970→    keyEn: 'Support Condition',
+   971→   971→    value: elLoad.supportCondition,
+   972→   972→  });
+   973→   973→  content.push({ type: 'divider' });
+   974→   974→
+   975→   975→  // Material
+   976→   976→  content.push({
+   977→   977→    type: 'key-value',
+   978→   978→    keyAr: "f'c",
+   979→   979→    keyEn: "f'c",
+   980→   980→    value: `${mat.fpc}`,
+   981→   981→    unit: 'MPa',
+   982→   982→  });
+   983→   983→  content.push({
+   984→   984→    type: 'key-value',
+   985→   985→    keyAr: 'Ec',
+   986→   986→    keyEn: 'Ec',
+   987→   987→    value: `${mat.Ec}`,
+   988→   988→    unit: 'MPa',
+   989→   989→  });
+   990→   990→  content.push({
+   991→   991→    type: 'key-value',
+   992→   992→    keyAr: 'DIF فولاذ',
+   993→   993→    keyEn: 'Steel DIF',
+   994→   994→    value: `${mat.difTensile}`,
+   995→   995→  });
+   996→   996→  content.push({
+   997→   997→    type: 'key-value',
+   998→   998→    keyAr: 'DIF خرسانة',
+   999→   999→    keyEn: 'Concrete DIF',
+  1000→  1000→    value: `${mat.difCompressive}`,
+  1001→  1001→  });
+  1002→  1002→  content.push({ type: 'divider' });
+  1003→  1003→
+  1004→  1004→  // Blast inputs to this element
+  1005→  1005→  content.push({
+  1006→  1006→    type: 'paragraph',
+  1007→  1007→    textAr: '── مسار الانفجار ──',
+  1008→  1008→    textEn: '── Blast Path ──',
+  1009→  1009→  });
+  1010→  1010→
+  1011→  1011→  const blastP = element === 'roof'
+  1012→  1012→    ? designInput.blast.peakReflectedPressure
+  1013→  1013→    : element === 'wall'
+  1014→  1014→      ? designInput.blast.peakReflectedPressure * 0.70
+  1015→  1015→      : designInput.blast.peakDynamicPressure;
+  1016→  1016→
+  1017→  1017→  content.push({
+  1018→  1018→    type: 'key-value',
+  1019→  1019→    keyAr: '[BLAST-001] P_peak',
+  1020→  1020→    keyEn: '[BLAST-001] P_peak',
+  1021→  1021→    value: `${blastP.toFixed(1)}`,
+  1022→  1022→    unit: 'kPa',
+  1023→  1023→  });
+  1024→  1024→  content.push({
+  1025→  1025→    type: 'key-value',
+  1026→  1026→    keyAr: 'I',
+  1027→  1027→    keyEn: 'I',
+  1028→  1028→    value: `${designInput.blast.positivePhaseImpulse.toFixed(1)}`,
+  1029→  1029→    unit: 'kPa*ms',
+  1030→  1030→  });
+  1031→  1031→  content.push({
+  1032→  1032→    type: 'key-value',
+  1033→  1033→    keyAr: 'td',
+  1034→  1034→    keyEn: 'td',
+  1035→  1035→    value: `${designInput.blast.positivePhaseDuration.toFixed(2)}`,
+  1036→  1036→    unit: 'ms',
+  1037→  1037→  });
+  1038→  1038→  content.push({ type: 'divider' });
+  1039→  1039→
+  1040→  1040→  // SDOF
+  1041→  1041→  content.push({
+  1042→  1042→    type: 'paragraph',
+  1043→  1043→    textAr: '── الاستجابة الديناميكية ──',
+  1044→  1044→    textEn: '── Dynamic Response ──',
+  1045→  1045→  });
+  1046→  1046→
+  1047→  1047→  const C_val = elLoad.supportCondition === 'fixed' ? 0.031 : elLoad.supportCondition === 'partial_fixity' ? 0.047 : 0.063;
+  1048→  1048→  const KLM = elLoad.supportCondition === 'fixed' ? 0.64 : elLoad.supportCondition === 'partial_fixity' ? 0.71 : 0.78;
+  1049→  1049→  const T = C_val * elLoad.span * Math.pow(elLoad.span / Math.max(elLoad.thickness, 0.01), 2);
+  1050→  1050→
+  1051→  1051→  content.push({
+  1052→  1052→    type: 'key-value',
+  1053→  1053→    keyAr: '[SDOF-001] T',
+  1054→  1054→    keyEn: '[SDOF-001] T',
+  1055→  1055→    value: `${T.toFixed(2)}`,
+  1056→  1056→    unit: 'ms',
+  1057→  1057→  });
+  1058→  1058→  content.push({
+  1059→  1059→    type: 'key-value',
+  1060→  1060→    keyAr: '[SDOF-002] KLM',
+  1061→  1061→    keyEn: '[SDOF-002] KLM',
+  1062→  1062→    value: `${KLM.toFixed(2)}`,
+  1063→  1063→  });
+  1064→  1064→  content.push({
+  1065→  1065→    type: 'key-value',
+  1066→  1066→    keyAr: '[SDOF-003] td/T',
+  1067→  1067→    keyEn: '[SDOF-003] td/T',
+  1068→  1068→    value: `${(designInput.blast.positivePhaseDuration / Math.max(T, 0.01)).toFixed(3)}`,
+  1069→  1069→  });
+  1070→  1070→  content.push({ type: 'divider' });
+  1071→  1071→
+  1072→  1072→  // Demand
+  1073→  1073→  content.push({
+  1074→  1074→    type: 'paragraph',
+  1075→  1075→    textAr: '── الطلب الإنشائي ──',
+  1076→  1076→    textEn: '── Structural Demand ──',
+  1077→  1077→  });
+  1078→  1078→  content.push({
+  1079→  1079→    type: 'key-value',
+  1080→  1080→    keyAr: `[DEMAND-005] Mu`,
+  1081→  1081→    keyEn: `[DEMAND-005] Mu`,
+  1082→  1082→    value: `${elResult.designMoment.toFixed(2)}`,
+  1083→  1083→    unit: 'kN*m/m',
+  1084→  1084→  });
+  1085→  1085→  content.push({
+  1086→  1086→    type: 'key-value',
+  1087→  1087→    keyAr: `[DEMAND-006] Vu`,
+  1088→  1088→    keyEn: `[DEMAND-006] Vu`,
+  1089→  1089→    value: `${elResult.designShear.toFixed(2)}`,
+  1090→  1090→    unit: 'kN/m',
+  1091→  1091→  });
+  1092→  1092→  content.push({
+  1093→  1093→    type: 'key-value',
+  1094→  1094→    keyAr: `[DEMAND-007] delta`,
+  1095→  1095→    keyEn: `[DEMAND-007] delta`,
+  1096→  1096→    value: `${elResult.maxDeflection.toFixed(2)}`,
+  1097→  1097→    unit: 'mm',
+  1098→  1098→  });
+  1099→  1099→  content.push({ type: 'divider' });
+  1100→  1100→
+  1101→  1101→  // Reinforcement
+  1102→  1102→  content.push({
+  1103→  1103→    type: 'paragraph',
+  1104→  1104→    textAr: '── التسليح ──',
+  1105→  1105→    textEn: '── Reinforcement ──',
+  1106→  1106→  });
+  1107→  1107→  content.push({
+  1108→  1108→    type: 'key-value',
+  1109→  1109→    keyAr: `[RC-002] As_req`,
+  1110→  1110→    keyEn: `[RC-002] As_req`,
+  1111→  1111→    value: `${elResult.requiredAs.toFixed(1)}`,
+  1112→  1112→    unit: 'mm^2/m',
+  1113→  1113→  });
+  1114→  1114→  content.push({
+  1115→  1115→    type: 'key-value',
+  1116→  1116→    keyAr: `[RC-004] As_prov`,
+  1117→  1117→    keyEn: `[RC-004] As_prov`,
+  1118→  1118→    value: `${elResult.mainReinforcement.asProvided.toFixed(1)}`,
+  1119→  1119→    unit: `mm^2/m (T${elResult.mainReinforcement.barDiameter} @ ${elResult.mainReinforcement.spacing}mm)`,
+  1120→  1120→  });
+  1121→  1121→  content.push({ type: 'divider' });
+  1122→  1122→
+  1123→  1123→  // Verification
+  1124→  1124→  content.push({
+  1125→  1125→    type: 'paragraph',
+  1126→  1126→    textAr: '── التحقق ──',
+  1127→  1127→    textEn: '── Verification ──',
+  1128→  1128→  });
+  1129→  1129→  content.push({
+  1130→  1130→    type: 'key-value',
+  1131→  1131→    keyAr: `[VERIFY-001] SF_flexure`,
+  1132→  1132→    keyEn: `[VERIFY-001] SF_flexure`,
+  1133→  1133→    value: `${elVer.flexuralSF.toFixed(2)}`,
+  1134→  1134→    unit: elVer.flexuralPass ? 'PASS' : 'FAIL',
+  1135→  1135→  });
+  1136→  1136→  content.push({
+  1137→  1137→    type: 'key-value',
+  1138→  1138→    keyAr: `[VERIFY-002] SF_shear`,
+  1139→  1139→    keyEn: `[VERIFY-002] SF_shear`,
+  1140→  1140→    value: `${elVer.shearSF.toFixed(2)}`,
+  1141→  1141→    unit: elVer.shearPass ? 'PASS' : 'FAIL',
+  1142→  1142→  });
+  1143→  1143→  content.push({
+  1144→  1144→    type: 'key-value',
+  1145→  1145→    keyAr: `[VERIFY-003] SF_penetration`,
+  1146→  1146→    keyEn: `[VERIFY-003] SF_penetration`,
+  1147→  1147→    value: elVer.penetrationSF === Infinity ? 'N/A (no threat)' : `${elVer.penetrationSF.toFixed(2)}`,
+  1148→  1148→    unit: elVer.penetrationPass ? 'PASS' : 'FAIL',
+  1149→  1149→  });
+  1150→  1150→  content.push({
+  1151→  1151→    type: 'key-value',
+  1152→  1152→    keyAr: `[VERIFY-004] delta/L`,
+  1153→  1153→    keyEn: `[VERIFY-004] delta/L`,
+  1154→  1154→    value: `${(elVer.deflectionRatio * 1000).toFixed(2)}‰`,
+  1155→  1155→    unit: elVer.deflectionPass ? 'PASS' : 'FAIL',
+  1156→  1156→  });
+  1157→  1157→  content.push({
+  1158→  1158→    type: 'key-value',
+  1159→  1159→    keyAr: 'نمط التحكم',
+  1160→  1160→    keyEn: 'Governing Mode',
+  1161→  1161→    value: elVer.governingMode,
+  1162→  1162→  });
+  1163→  1163→
+  1164→  1164→  const severity = elVer.overallPass ? 'success' : 'critical';
+  1165→  1165→
+  1166→  1166→  return {
+  1167→  1167→    id: `calc-element-${element}`,
+  1168→  1168→    titleAr: `ورقة حساب: ${labels.ar}`,
+  1169→  1169→    titleEn: `Calculation Sheet: ${labels.en}`,
+  1170→  1170→    severity,
+  1171→  1171→    content,
+  1172→  1172→  };
+  1173→  1173→}

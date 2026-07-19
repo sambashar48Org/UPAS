@@ -17,6 +17,7 @@ import ThreatForm from '../../ui/InputForm/ThreatForm';
 import DesignCriteriaForm from '../../ui/InputForm/DesignCriteriaForm';
 import ResultsPanel from '../../ui/ResultsPanel';
 import ReportViewer from '../../ui/ReportViewer';
+import ProfessionalReport from '../../ui/ProfessionalReport';
 
 export default function AnalysisView() {
   const currentProject = useProjectStore((s) => s.currentProject);
@@ -109,9 +110,9 @@ export default function AnalysisView() {
       return (
         <div
           className="shrink-0 border-l overflow-hidden"
-          style={{ width: 380, minWidth: 380, borderColor: 'var(--upas-border)', position: 'relative', zIndex: 2 }}
+          style={{ width: 420, minWidth: 420, borderColor: 'var(--upas-border)', position: 'relative', zIndex: 2 }}
         >
-          <ReportViewer />
+          <ProfessionalReport />
         </div>
       );
     }
