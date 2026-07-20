@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest run --config vite.config.ts",
+    "test:watch": "vitest --config vite.config.ts",
     "typecheck": "tsc -b"
   },
   "dependencies": {
