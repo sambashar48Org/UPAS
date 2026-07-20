@@ -258,3 +258,31 @@ Stage Summary:
 - Professional report: TOC, section numbering, org/engineer branding, export buttons
 - Phase 5F architecture doc: Standard vs Advanced mode planning with 6 governance rules
 - Freeze Gate maintained: zero connection to calculation engine
+
+---
+Task ID: Phase 5G
+Agent: main
+Task: Release Candidate Preparation
+
+Work Log:
+- 5G-1: Updated demoProject.ts — renamed to "Underground Hardened Structure Demo", added DesignCriteria to DemoProjectData interface, included full design criteria (UFC 3-340-02 + ACI 318-19 defaults: SF=1.5, fy=420, ASTM A615 Grade 60, cover=50mm)
+- 5G-1: Updated Dashboard/index.tsx — added "Load Demo Project" button with async handler that loads all demo data, enables design, runs full pipeline (analysis + design + verification), navigates to results tab
+- 5G-2: Created docs/USER_GUIDE.md — comprehensive 11-section Arabic user guide covering: intro, quick start, project creation, threat definition, soil input, structure definition, analysis execution, results understanding, engineering report, settings, about
+- 5G-3: Created docs/ENGINEERING_LIMITATIONS.md — detailed engineering limitations document with 6 sections: Standard Mode scope, engineering assumptions tables (blast/soil/structure/design), usage limits, Advanced Mode triggers, known limitations, usage recommendations
+- 5G-4: Created docs/RELEASE_CHECKLIST.md — 10-section release checklist covering: tests, TypeScript, Freeze Gate, benchmarks, demo, export, report, documentation, UI/UX, version
+- 5G-5: Final QA — all 592 tests passing, 0 failures, 0 regressions
+- 5G-6: Updated version.ts — version changed to '1.0.0-RC1', added releaseCandidate field
+- 5G-6: Updated About/index.tsx — displays RC1 badge with "Release Candidate" label
+- Updated phase5d-settings.test.ts — version assertion updated to '1.0.0-RC1', added releaseCandidate check
+- Updated phase5e-export.test.ts — version assertion and demo name assertion updated
+- Created phase5g-release.test.ts — 16 new tests: version RC1 (5), demo project data (6), freeze gate integrity (5)
+- Installed jszip + file-saver + @types/file-saver (previously missing, caused 2 test failures in Phase 5E)
+
+Stage Summary:
+- 592 tests passing (576 + 16), 0 failures, 0 regression, 0 TypeScript errors
+- 6 new files created, 5 existing files modified (all UI/infra/docs only)
+- Demo Project: one-click load with full analysis + design + verification in under 1 minute
+- RC1 Versioning: version service + about screen show "1.0.0-RC1" with "Release Candidate" badge
+- Documentation: User Guide, Engineering Limitations, Release Checklist
+- Freeze Gate maintained: zero modifications to calculations/design/analysis engines
+- Standard Mode unchanged: all 576 pre-existing tests pass identically
