@@ -22,7 +22,7 @@ export default function NewProject() {
       updateProject({ location: location.trim() });
     }
 
-    setActiveView('project-setup');
+    setActiveView('analysis');
   };
 
   return (

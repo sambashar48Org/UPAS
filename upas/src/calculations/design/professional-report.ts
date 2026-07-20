@@ -143,6 +143,14 @@ const STATUS_LABELS: Record<string, { ar: string; color: string }> = {
   OPTIMIZED: { ar: 'تم تحسين التصميم', color: '#f59e0b' },
 };
 
+const GOVERNING_MODE_LABELS: Record<string, string> = {
+  flexure: 'انحناء',
+  shear: 'قص',
+  penetration: 'اختراق',
+  deflection: 'انحراف',
+  none: 'لا يوجد',
+};
+
 const DETONATION_AR: Record<string, string> = {
   surface: 'سطحي',
   air: 'جوي',
@@ -170,7 +178,10 @@ function extractElementData(
     flexuralSF: el.flexuralSafetyFactor,
     shearSF: el.shearSafetyFactor,
     overallPass: ver.overallPass,
-    governingMode: ver.governingMode,
+    governingMode: (() => {
+      const labels: Record<string, string> = { flexure: 'انحناء', shear: 'قص', penetration: 'اختراق', deflection: 'انحراف', none: 'لا يوجد' };
+      return labels[ver.governingMode] ?? ver.governingMode;
+    })(),
   };
 }
 
@@ -287,10 +298,10 @@ export function generateProfessionalReport(
     key: governingElement,
     label: ELEMENT_LABELS[governingElement].ar,
     labelEn: ELEMENT_LABELS[governingElement].en,
-    governingMode: verification.governingMode,
+    governingMode: GOVERNING_MODE_LABELS[verification.governingMode] ?? verification.governingMode,
     flexuralSF: critEl.flexuralSafetyFactor,
     shearSF: critEl.shearSafetyFactor,
-    penetrationSF: critVer.penetrationSafetyFactor,
+    penetrationSF: critVer.penetrationSF,
     deflectionRatio: critVer.deflectionRatio,
   };
 
@@ -311,7 +322,7 @@ export function generateProfessionalReport(
     statusColor: statusInfo.color,
     governingElement: governingElement,
     governingElementAr: ELEMENT_LABELS[governingElement].ar,
-    governingMode,
+    governingMode: GOVERNING_MODE_LABELS[governingMode] ?? governingMode,
     // Design Basis
     designBasis,
     // Threat
@@ -329,7 +340,7 @@ export function generateProfessionalReport(
     // Audit
     equationCount: EQUATION_REGISTRY.length,
     assumptionCount: DESIGN_ASSUMPTIONS.length,
-    equationCategories: getEquationCategories(),
+    equationCategories: getEquationCategories().map((c) => `${c.category} (${c.count})`),
     criticalAssumptions,
   };
 }

@@ -24,7 +24,7 @@ const BUILD_DATE = new Date().toISOString().split('T')[0];
 function getGitCommit(): string | null {
   try {
     // Vite exposes env vars prefixed with VITE_
-    const env = (import.meta as Record<string, Record<string, string | undefined>>).env;
+    const env = (import.meta as unknown as Record<string, Record<string, string | undefined>>).env;
     return env?.VITE_GIT_COMMIT ?? null;
   } catch {
     return null;

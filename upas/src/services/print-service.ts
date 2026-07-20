@@ -304,14 +304,14 @@ function buildResponseSection(r: ProfessionalReportData): string {
           <span class="${el.overallPass ? 'status-pass' : 'status-fail'}">${el.overallPass ? 'PASS' : 'FAIL'}</span>
         </div>
         <div class="kv-grid">
-          <div class="kv-row"><span class="kv-label">السماكة المطلوبة</span><span class="kv-value ${sfClass(el.existingThickness >= el.requiredThickness)}">${el.requiredThickness.toFixed(0)} mm</span></div>
+          <div class="kv-row"><span class="kv-label">السماكة المطلوبة</span><span class="kv-value ${sfClass(el.existingThickness >= el.requiredThickness ? 1 : 0)}">${el.requiredThickness.toFixed(0)} mm</span></div>
           <div class="kv-row"><span class="kv-label">عزم الانحناء Mu</span><span class="kv-value">${el.designMoment.toFixed(1)} kN·m/m</span></div>
           <div class="kv-row"><span class="kv-label">قوة القص Vu</span><span class="kv-value">${el.designShear.toFixed(1)} kN/m</span></div>
           <div class="kv-row"><span class="kv-label">التسليح As</span><span class="kv-value">${el.requiredAs.toFixed(0)} mm²/m</span></div>
           <div class="kv-row"><span class="kv-label">SF انحناء</span><span class="kv-value ${sfClass(el.flexuralSF)}">${el.flexuralSF.toFixed(2)}</span></div>
           <div class="kv-row"><span class="kv-label">SF قص</span><span class="kv-value ${sfClass(el.shearSF)}">${el.shearSF.toFixed(2)}</span></div>
           <div class="kv-row"><span class="kv-label">التسليح</span><span class="kv-value">${el.barDiameter}mm @ ${el.barSpacing}mm</span></div>
-          <div class="kv-row"><span class="kv-label">As المقدمة</span><span class="kv-value ${sfClass(el.providedAs >= el.requiredAs)}">${el.providedAs.toFixed(0)} mm²/m</span></div>
+          <div class="kv-row"><span class="kv-label">As المقدمة</span><span class="kv-value ${sfClass(el.providedAs >= el.requiredAs ? 1 : 0)}">${el.providedAs.toFixed(0)} mm²/m</span></div>
         </div>
       </div>`;
   }).join('');

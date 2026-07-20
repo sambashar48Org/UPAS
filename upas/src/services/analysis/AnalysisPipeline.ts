@@ -100,6 +100,7 @@ export function executeAnalysis(input: PipelineInput): PipelineResult {
       report: null,
       errors: [`خطأ في الحسابات: ${err instanceof Error ? err.message : String(err)}`],
       validationErrors: [],
+      designResult: null,
     };
   }
 

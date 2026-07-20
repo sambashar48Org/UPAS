@@ -194,7 +194,7 @@ describe('5C-2 — Professional Report Generator', () => {
     const report = generateProfessionalReport(result, input, makeFakeAnalysisResult(), 'Test');
 
     expect(report.criticalElement.key).toBe(result.verification.governingElement);
-    expect(report.criticalElement.governingMode).toBe(result.verification.governingMode);
+    expect(report.criticalElement.governingMode).toBe('انحناء'); // Arabic label for flexure
     expect(report.criticalElement.flexuralSF).toBeGreaterThan(0);
     expect(report.criticalElement.shearSF).toBeGreaterThan(0);
     expect(report.criticalElement.label).toBeTruthy();
@@ -232,7 +232,7 @@ describe('5C-2 — Professional Report Generator', () => {
 
     expect(report.designStatus).toBe(result.designStatus);
     expect(report.governingElement).toBe(result.verification.governingElement);
-    expect(report.governingMode).toBe(result.verification.governingMode);
+    expect(report.governingMode).toBe('انحناء'); // Arabic label for flexure
   });
 
   it('should pass through warnings', () => {
