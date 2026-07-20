@@ -16,15 +16,18 @@ describe('5D-4 Version Service', () => {
   it('getVersionInfo should return valid version info', () => {
     const info = getVersionInfo();
 
-    expect(info.version).toBe('1.0.0');
+    expect(info.version).toBe('1.0.0-RC1');
+    expect(info.releaseCandidate).toBe('RC1');
     expect(info.appName).toContain('UPAS');
     expect(info.appNameAr).toContain('تحليل');
     expect(info.buildDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('version should be a valid semver string', () => {
+  it('version should be a valid semver string with optional pre-release', () => {
     const info = getVersionInfo();
-    const parts = info.version.split('.');
+    // Semver with pre-release: MAJOR.MINOR.PATCH-PRE
+    const base = info.version.split('-')[0];
+    const parts = base.split('.');
     expect(parts).toHaveLength(3);
     parts.forEach((p) => expect(parseInt(p, 10)).toBeGreaterThanOrEqual(0));
   });

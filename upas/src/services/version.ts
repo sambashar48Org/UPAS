@@ -5,8 +5,10 @@
  */
 
 export interface VersionInfo {
-  /** Semantic version string, e.g. "1.0.0" */
+  /** Semantic version string, e.g. "1.0.0-RC1" */
   version: string;
+  /** Release candidate label, e.g. "RC1" */
+  releaseCandidate: string | null;
   /** ISO 8601 build timestamp */
   buildDate: string;
   /** Short git commit hash (available in dev/build) */
@@ -32,7 +34,8 @@ function getGitCommit(): string | null {
 /** Returns current version information. */
 export function getVersionInfo(): VersionInfo {
   return {
-    version: '1.0.0',
+    version: '1.0.0-RC1',
+    releaseCandidate: 'RC1',
     buildDate: BUILD_DATE,
     gitCommit: getGitCommit(),
     appName: 'UPAS — Underground Protective Analysis System',

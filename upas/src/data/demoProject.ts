@@ -19,18 +19,40 @@ import type { Structure } from '../models/Structure';
 import type { Threat } from '../models/Threat';
 import type { Bomb } from '../models/Bomb';
 
+import type { DesignCriteria } from '../calculations/design/types';
+
 export interface DemoProjectData {
   project: Project;
   soilProfile: SoilProfile;
   structure: Structure;
   threat: Threat;
   bomb: Bomb;
+  /** Pre-configured design criteria for the demo — enables one-click analysis + design */
+  designCriteria: DesignCriteria;
 }
+
+/** Default design criteria used by the demo project (UFC 3-340-02 + ACI 318-19) */
+const DEMO_DESIGN_CRITERIA: DesignCriteria = {
+  targetSafetyFactor: 1.5,
+  allowPlasticResponse: true,
+  supportCondition: 'simply_supported',
+  wallSupportCondition: 'fixed',
+  reinforcementGrade: { fy: 420, standard: 'ASTM A615 Grade 60' },
+  concreteCover: 0.050,
+  maxDeflectionRatio: 1 / 360,
+  thicknessIncrement: 0.025,
+  maxThickness: 2.0,
+  includeSelfWeight: true,
+  includeOverburden: true,
+  includeLateralPressure: true,
+  maxSupportRotation: 8.0,
+  steelGrade: 420,
+};
 
 export function createDemoProject(): DemoProjectData {
   const project = createProject({
-    name: 'مشروع تجريبي — ملجأ تحت أرضي',
-    description: 'سيناريو تجريبي لتحليل منشأ تحت أرضي ضد تهديد انفجاري سطحي',
+    name: 'Underground Hardened Structure Demo',
+    description: 'سيناريو تجريبي شامل — تحليل وتصميم منشأ تحت أرضي ضد تهديد انفجاري سطحي | Complete demo: blast analysis + structural design + verification',
   });
 
   const structure = createStructure({
@@ -81,5 +103,5 @@ export function createDemoProject(): DemoProjectData {
     detonationType: DetonationType.Surface,
   });
 
-  return { project, soilProfile, structure, threat, bomb };
+  return { project, soilProfile, structure, threat, bomb, designCriteria: DEMO_DESIGN_CRITERIA };
 }

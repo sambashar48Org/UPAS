@@ -245,7 +245,7 @@ describe('5E-6 Demo Project', () => {
     const demo = createDemoProject();
 
     expect(demo.project).toBeDefined();
-    expect(demo.project.name).toContain('تجريبي');
+    expect(demo.project.name).toContain('Underground Hardened Structure Demo');
     expect(demo.structure).toBeDefined();
     expect(demo.soilProfile).toBeDefined();
     expect(demo.threat).toBeDefined();
@@ -322,7 +322,8 @@ describe('5E Freeze Gate Integrity', () => {
 describe('5E-3 Report Branding', () => {
   it('version info should be available for branding', () => {
     const info = getVersionInfo();
-    expect(info.version).toBe('1.0.0');
+    expect(info.version).toBe('1.0.0-RC1');
+    expect(info.releaseCandidate).toBe('RC1');
     expect(info.appName).toContain('UPAS');
   });
 

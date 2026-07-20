@@ -90,15 +90,25 @@ export default function AboutScreen() {
 
         {/* Version Badge */}
         <div className="px-8 py-4 text-center border-b" style={{ borderColor: 'var(--upas-border)' }}>
-          <span
-            className="inline-flex items-center gap-2 text-sm font-bold px-4 py-1.5 rounded-full"
-            style={{ backgroundColor: 'var(--upas-bg-secondary)', color: 'var(--upas-text-primary)' }}
-          >
-            v{versionInfo.version}
-            <span className="text-xs font-normal" style={{ color: 'var(--upas-text-secondary)' }}>
-              — Build {versionInfo.buildDate}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <span
+              className="inline-flex items-center gap-2 text-sm font-bold px-4 py-1.5 rounded-full"
+              style={{ backgroundColor: 'var(--upas-bg-secondary)', color: 'var(--upas-text-primary)' }}
+            >
+              v{versionInfo.version}
+              <span className="text-xs font-normal" style={{ color: 'var(--upas-text-secondary)' }}>
+                — Build {versionInfo.buildDate}
+              </span>
             </span>
-          </span>
+            {versionInfo.releaseCandidate && (
+              <span
+                className="inline-flex items-center text-xs font-bold px-3 py-1 rounded-full"
+                style={{ backgroundColor: '#fef3c7', color: '#92400e' }}
+              >
+                Release Candidate
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Content */}

@@ -1,5 +1,6 @@
 import { useProjectStore } from '../../../stores/projectStore';
 import { useUIStore } from '../../../stores/uiStore';
+import { useState } from 'react';
 
 import materialsRaw from '../../../data/materials.json';
 import bombTypesRaw from '../../../data/bomb-types.json';
@@ -25,10 +26,77 @@ export default function Dashboard() {
   const createNewProject = useProjectStore((s) => s.createNewProject);
   const setActiveView = useUIStore((s) => s.setActiveView);
   const setDatabaseView = useUIStore((s) => s.setDatabaseView);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
 
   const handleCreateProject = () => {
     createNewProject();
     setActiveView('new-project');
+  };
+
+  const handleLoadDemo = async () => {
+    if (isDemoLoading) return;
+    setIsDemoLoading(true);
+    try {
+      const { createDemoProject } = await import('../../../data/demoProject');
+      const { executeAnalysis } = await import('../../../services/analysis');
+
+      const store = useProjectStore.getState();
+      const demo = createDemoProject();
+
+      // Load all demo data into store
+      store.setCurrentProject(demo.project);
+      store.setThreats([demo.threat]);
+      store.setBombs([demo.bomb]);
+      store.setSoilProfile(demo.soilProfile);
+      store.setStructure(demo.structure);
+      store.setDesignEnabled(true);
+      store.setDesignCriteria(demo.designCriteria);
+      store.setAnalysisResults([]);
+      store.setLastFullResult(null);
+      store.setLastReport(null);
+      store.setLastDesignResult(null);
+      store.setAnalysisError(null);
+
+      // Navigate to analysis view
+      setActiveView('analysis');
+
+      // Run analysis + design automatically
+      store.setIsAnalyzing(true);
+      const result = await new Promise<ReturnType<typeof executeAnalysis>>((resolve) => {
+        setTimeout(() => {
+          resolve(executeAnalysis({
+            project: demo.project,
+            soilProfile: demo.soilProfile,
+            structure: demo.structure,
+            threat: demo.threat,
+            bomb: demo.bomb,
+            designCriteria: demo.designCriteria,
+          }));
+        }, 80);
+      });
+
+      if (result.success && result.fullResult && result.domainResult && result.report) {
+        useProjectStore.getState().setLastFullResult(result.fullResult);
+        useProjectStore.getState().setLastReport(result.report);
+        useProjectStore.getState().setLastDesignResult(result.designResult);
+        useProjectStore.getState().addAnalysisResult(result.domainResult);
+        useUIStore.getState().setAnalysisTab('results');
+        useUIStore.getState().toggleThreatObject();
+        useUIStore.getState().toggleDamageZones();
+        useUIStore.getState().addNotification('تم تحميل المشروع التجريبي وتشغيل التحليل والتصميم بنجاح', 'success');
+      } else {
+        useProjectStore.getState().setAnalysisError(result.errors.join('. '));
+        useUIStore.getState().addNotification('فشل تحميل المشروع التجريبي', 'error');
+      }
+    } catch (err) {
+      useUIStore.getState().addNotification(
+        `خطأ: ${err instanceof Error ? err.message : String(err)}`,
+        'error',
+      );
+    } finally {
+      useProjectStore.getState().setIsAnalyzing(false);
+      setIsDemoLoading(false);
+    }
   };
 
   const handleOpenProject = (projectId: string) => {
@@ -46,7 +114,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header with quick action */}
+      {/* Header with quick actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold" style={{ color: 'var(--upas-text-primary)' }}>
@@ -56,19 +124,45 @@ export default function Dashboard() {
             منصة هندسية ثلاثية الأبعاد لتحليل المنشآت تحت الأرض ضد التهديدات الانفجارية
           </p>
         </div>
-        <button
-          onClick={handleCreateProject}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-medium
-            transition-colors duration-200 cursor-pointer text-sm
-            hover:opacity-90 active:scale-[0.98] shrink-0"
-          style={{ backgroundColor: 'var(--upas-accent)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          مشروع جديد
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={handleLoadDemo}
+            disabled={isDemoLoading}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium
+              transition-colors duration-200 cursor-pointer text-sm border
+              hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              borderColor: 'var(--upas-border)',
+              backgroundColor: 'var(--upas-bg-card)',
+              color: 'var(--upas-text-primary)',
+            }}
+          >
+            {isDemoLoading ? (
+              <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+                <path d="M12 2a10 10 0 0 1 10 10" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+            )}
+            تحميل مشروع تجريبي
+          </button>
+          <button
+            onClick={handleCreateProject}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-medium
+              transition-colors duration-200 cursor-pointer text-sm
+              hover:opacity-90 active:scale-[0.98] shrink-0"
+            style={{ backgroundColor: 'var(--upas-accent)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            مشروع جديد
+          </button>
+        </div>
       </div>
 
       {/* Recent Projects */}
