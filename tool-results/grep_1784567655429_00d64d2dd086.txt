@@ -1,0 +1,252 @@
+/home/z/my-project/upas/docs/PHASE_5C_DESIGN_REVIEW_GATE.md:131:**Confirmation**: Layer 3 output (verification matrix, governing mode) is invariant.
+/home/z/my-project/upas/docs/RELEASE_ACCEPTANCE_REPORT.md:35:| J20 | Professional report generation error | `verification.governingMode` is undefined when design result has no governing mode — report UI still renders from store data. This is a data path issue in `professional-report.ts:205` that only manifests in programmatic generation, not in the UI pipeline where the full `DesignResult.verification` object is always populated. |
+/home/z/my-project/upas/docs/RELEASE_ACCEPTANCE_REPORT.md:75:- Summary card: protection level with color coding (green/amber/red), governing element, governing mode
+/home/z/my-project/upas/docs/RELEASE_ACCEPTANCE_REPORT.md:112:| Governing Element | Roof |
+/home/z/my-project/upas/docs/FREEZE_GATE_REGISTRY.md:78:| 4G-E: Governing Mode Report | 5 | PASS |
+/home/z/my-project/upas/docs/USER_GUIDE.md:154:### 8.3 العنصر الحاكم (Governing Element)
+/home/z/my-project/upas/scripts/populate-baselines.ts:45:  console.log(`   Governing Element: ${result.verification.governingElement}`);
+/home/z/my-project/upas/scripts/populate-baselines.ts:46:  console.log(`   Governing Mode: ${result.verification.governingMode}`);
+/home/z/my-project/upas/scripts/populate-baselines.ts:59:    console.log(`     governingMode:     ${ver.governingMode}`);
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:109:  `governingElement=${fr.overall?.governingElement}, SF=${fr.overall?.minSafetyFactor?.toFixed(3)}`);
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:122:  check('5H-1', 'J17', 'Governing element identified',
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:123:    ['roof', 'wall', 'floor'].includes(dr.governingElement),
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:124:    `governingElement=${dr.governingElement}`);
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:188:  check('5H-2', 'E4', 'Governing element clearly labeled in Results',
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:189:    ['roof', 'wall', 'floor'].includes(dr.governingElement),
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:190:    `UI shows: "العنصر الحاكم: ${dr.governingElement === 'roof' ? 'السقف' : dr.governingElement === 'wall' ? 'الجدران' : 'الأرضية'}" with governing mode label`);
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:252:    'StructuralDiagram.tsx renders SVG cross-section with: color-coded status, thickness labels, reinforcement labels, Mu/Vu badges, SF badges, dimension lines, governing indicator');
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:286:  `status=${pipelineResult.designResult?.designStatus}, governing=${pipelineResult.designResult?.governingElement}`);
+/home/z/my-project/upas/scripts/phase5h-acceptance-review.ts:381:  console.log(`  Governing Element: ${dr.governingElement}`);
+/home/z/my-project/upas/worklog.md:71:- Created unified VerificationResult with governing mode detection
+/home/z/my-project/upas/worklog.md:76:- Governing mode and governing element detection
+/home/z/my-project/upas/worklog.md:117:- Governing mode visualization
+/home/z/my-project/upas/worklog.md:131:- Benchmark cases, governing mode report, steelGrade data path
+/home/z/my-project/upas/worklog.md:193:- Created VerificationMatrix.tsx — 4×3 colored status grid (flexure/shear/penetration/deflection × roof/wall/floor) with governing element highlight
+/home/z/my-project/upas/worklog.md:243:- Enhanced src/components/ui/ProfessionalReport/StructuralDiagram.tsx — Added Mu/Vu/SF badges, dimension lines with arrows, engineering data panel, improved SVG quality, governing indicator for all elements
+/home/z/my-project/upas/src/calculations/types.ts:495:    /** Governing element (weakest link) */
+/home/z/my-project/upas/src/calculations/types.ts:496:    governingElement: 'roof' | 'wall' | 'floor';
+/home/z/my-project/upas/src/calculations/types.ts:497:    /** Governing failure mode */
+/home/z/my-project/upas/src/calculations/types.ts:498:    governingMode: 'blast' | 'penetration';
+/home/z/my-project/upas/src/calculations/design/types.ts:386:  /** Governing (weakest) failure mode for this element */
+/home/z/my-project/upas/src/calculations/design/types.ts:387:  governingMode: VerificationMode;
+/home/z/my-project/upas/src/calculations/design/types.ts:408:  /** Governing (weakest) element across all modes */
+/home/z/my-project/upas/src/calculations/design/types.ts:409:  governingElement: 'roof' | 'wall' | 'floor';
+/home/z/my-project/upas/src/calculations/design/types.ts:411:  /** Governing failure mode across all elements */
+/home/z/my-project/upas/src/calculations/design/types.ts:412:  governingMode: VerificationMode;
+/home/z/my-project/upas/src/calculations/design/types.ts:430:  /** Governing (weakest) element */
+/home/z/my-project/upas/src/calculations/design/types.ts:431:  governingElement: 'roof' | 'wall' | 'floor';
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:15: * This module also determines the governing (weakest) element and failure mode.
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:145: * Determines the governing (weakest) mode by normalizing all checks
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:154: * The mode with the lowest margin is the governing mode.
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:202:  // ── 5. Determine governing mode (lowest margin) ──
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:216:  const governingMode = margins[0].margin === Infinity ? 'none' : margins[0].mode;
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:232:    governingMode,
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:279:  // ── Determine governing element (lowest margin across all modes) ──
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:287:  let governingElement: ElKey = 'roof';
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:288:  let governingMode: VerificationMode = 'none';
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:303:        governingElement = key;
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:304:        governingMode = m.mode;
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:314:    governingElement,
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:315:    governingMode: lowestMargin === Infinity ? 'none' : governingMode,
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:377:    governingElement: verification.governingElement,
+/home/z/my-project/upas/src/calculations/design/design-verification.ts:399:    switch (v.governingMode) {
+/home/z/my-project/upas/src/calculations/design/design-assumptions.ts:281:    name: 'Governing Mode = Lowest Margin',
+/home/z/my-project/upas/src/calculations/design/design-assumptions.ts:282:    description: 'The governing failure mode is determined by the lowest normalized margin (actual/required) across all verification checks.',
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:719:  // Governing mode
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:720:  const govElem = ELEMENT_NAMES[designResult.verification.governingElement]!;
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:721:  const modeAr = designResult.verification.governingMode === 'flexure' ? 'انحناء'
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:722:    : designResult.verification.governingMode === 'shear' ? 'قص'
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:723:    : designResult.verification.governingMode === 'penetration' ? 'اختراق'
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:724:    : designResult.verification.governingMode === 'deflection' ? 'انحراف'
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:731:    keyEn: 'Governing Element',
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:737:    keyEn: 'Governing Failure Mode',
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:1160:    keyEn: 'Governing Mode',
+/home/z/my-project/upas/src/calculations/design/calculation-trace-report.ts:1161:    value: elVer.governingMode,
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:11: *   - Expected outputs (Mu, As, thickness, SF, governing mode)
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:39:  /** Governing element */
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:40:  governingElement: 'roof' | 'wall' | 'floor';
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:42:  /** Governing mode */
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:43:  governingMode: string;
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:66:  /** Expected governing mode for this element */
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:67:  governingMode: string;
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:230:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:240:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:250:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:253:    governingElement: 'roof',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:254:    governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:357:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:367:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:377:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:380:    governingElement: 'roof',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:381:    governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:466:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:476:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:486:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:489:    governingElement: 'roof',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:490:    governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:578:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:588:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:598:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:601:    governingElement: 'roof',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:602:    governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:613:  description: 'Moderate blast on typical underground box structure. Flexure is the governing mode.',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:686:      governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:696:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:706:      governingMode: 'flexure',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:709:    governingElement: 'roof',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:710:    governingMode: 'shear',
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:749:      bm.expected[key].governingMode = result.verification.elements[key].governingMode;
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:753:    bm.expected.governingElement = result.verification.governingElement;
+/home/z/my-project/upas/src/calculations/design/benchmarks.ts:754:    bm.expected.governingMode = result.verification.governingMode;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:20: *   8. Critical Elements — governing element detail
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:60:  governingMode: string;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:72:  governingElement: string;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:73:  governingElementAr: string;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:74:  governingMode: string;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:113:    governingMode: string;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:173:    governingMode: ver.governingMode,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:204:  const { verification, designStatus, governingElement, warnings } = designResult;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:205:  const governingMode = verification.governingMode;
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:284:  const critVer = verification.elements[governingElement];
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:285:  const critEl = designResult[governingElement];
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:287:    key: governingElement,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:288:    label: ELEMENT_LABELS[governingElement].ar,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:289:    labelEn: ELEMENT_LABELS[governingElement].en,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:290:    governingMode: verification.governingMode,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:312:    governingElement: governingElement,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:313:    governingElementAr: ELEMENT_LABELS[governingElement].ar,
+/home/z/my-project/upas/src/calculations/design/professional-report.ts:314:    governingMode,
+/home/z/my-project/upas/src/calculations/design/structural-design.ts:417: * Therefore, max(w₁, w₂) ensures the correct governing load in BOTH
+/home/z/my-project/upas/src/calculations/design/structural-design.ts:503:  // impulse-based formula provides the correct governing load.
+/home/z/my-project/upas/src/calculations/design/structural-design.ts:511:  // ── 6. Governing equivalent blast load (kPa) ──
+/home/z/my-project/upas/src/calculations/results/index.ts:121:  let governingElement: 'roof' | 'wall' | 'floor' = 'roof';
+/home/z/my-project/upas/src/calculations/results/index.ts:122:  let governingMode: 'blast' | 'penetration' = 'blast';
+/home/z/my-project/upas/src/calculations/results/index.ts:131:        governingElement = elem.name;
+/home/z/my-project/upas/src/calculations/results/index.ts:132:        governingMode = 'blast';
+/home/z/my-project/upas/src/calculations/results/index.ts:141:        governingElement = elem.name;
+/home/z/my-project/upas/src/calculations/results/index.ts:142:        governingMode = 'penetration';
+/home/z/my-project/upas/src/calculations/results/index.ts:163:    governingElement,
+/home/z/my-project/upas/src/calculations/results/index.ts:164:    governingMode,
+/home/z/my-project/upas/src/calculations/results/index.ts:357:  // Based on governing mode
+/home/z/my-project/upas/src/calculations/results/index.ts:358:  if (assessment.governingMode === 'penetration') {
+/home/z/my-project/upas/src/calculations/results/index.ts:359:    const elemAr = assessment.governingElement === 'roof' ? 'السقف'
+/home/z/my-project/upas/src/calculations/results/index.ts:360:      : assessment.governingElement === 'wall' ? 'الجدران' : 'الأرضية';
+/home/z/my-project/upas/src/calculations/results/index.ts:366:  if (assessment.governingMode === 'blast') {
+/home/z/my-project/upas/src/calculations/results/index.ts:367:    const elemAr = assessment.governingElement === 'roof' ? 'السقف'
+/home/z/my-project/upas/src/calculations/results/index.ts:368:      : assessment.governingElement === 'wall' ? 'الجدران' : 'الأرضية';
+/home/z/my-project/upas/src/calculations/reports/index.ts:101:  const elemAr = overall.governingElement === 'roof' ? 'السقف'
+/home/z/my-project/upas/src/calculations/reports/index.ts:102:    : overall.governingElement === 'wall' ? 'الجدران' : 'الأرضية';
+/home/z/my-project/upas/src/calculations/reports/index.ts:104:  const modeAr = overall.governingMode === 'blast' ? 'انفجار' : 'اختراق';
+/home/z/my-project/upas/src/calculations/reports/index.ts:105:  const modeEn = overall.governingMode === 'blast' ? 'Blast' : 'Penetration';
+/home/z/my-project/upas/src/calculations/reports/index.ts:120:        textEn: `Analysis of an underground structure against a blast threat. Protection level: ${protectionEn}. Governing element: ${overall.governingElement} (${modeEn}).`,
+/home/z/my-project/upas/src/calculations/reports/index.ts:136:        type: 'key-value', keyAr: 'العنصر الحاكم', keyEn: 'Governing Element',
+/home/z/my-project/upas/src/calculations/reports/index.ts:370:        type: 'key-value', keyAr: 'العنصر الحاكم', keyEn: 'Governing Element', value: overall.governingElement },
+/home/z/my-project/upas/src/calculations/reports/index.ts:372:        type: 'key-value', keyAr: 'نمط الفشل الحاكم', keyEn: 'Governing Mode', value: overall.governingMode },
+/home/z/my-project/upas/src/calculations/reports/index.ts:417: * Includes: governing thickness, reinforcement selection, Mu/Vu,
+/home/z/my-project/upas/src/calculations/reports/index.ts:435:  const govElemAr = design.governingElement === 'roof' ? 'السقف'
+/home/z/my-project/upas/src/calculations/reports/index.ts:436:    : design.governingElement === 'wall' ? 'الجدران' : 'الأرضية';
+/home/z/my-project/upas/src/calculations/reports/index.ts:440:    { type: 'key-value', keyAr: 'العنصر الحاكم', keyEn: 'Governing Element', value: govElemAr },
+/home/z/my-project/upas/src/calculations/reports/index.ts:463:    // Governing thickness
+/home/z/my-project/upas/src/visualization/ResultViewModel.ts:15:  governingElement: string;
+/home/z/my-project/upas/src/visualization/ResultViewModel.ts:16:  governingElementLabelAr: string;
+/home/z/my-project/upas/src/visualization/ResultViewModel.ts:17:  governingMode: string;
+/home/z/my-project/upas/src/visualization/ResultViewModel.ts:18:  governingModeLabelAr: string;
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:66:const GOVERNING_ELEMENT_LABELS: Record<string, string> = {
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:72:const GOVERNING_MODE_LABELS: Record<string, string> = {
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:99:    governingElement: result.overall.governingElement,
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:100:    governingElementLabelAr: GOVERNING_ELEMENT_LABELS[result.overall.governingElement] ?? result.overall.governingElement,
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:101:    governingMode: result.overall.governingMode,
+/home/z/my-project/upas/src/visualization/ResultAdapter.ts:102:    governingModeLabelAr: GOVERNING_MODE_LABELS[result.overall.governingMode] ?? result.overall.governingMode,
+/home/z/my-project/upas/src/services/print-service.ts:209:        <div class="cover-meta" style="margin-top:12px">العنصر الحاكم: ${report.governingElementAr}</div>
+/home/z/my-project/upas/src/services/print-service.ts:210:        <div class="cover-meta">النمط الحاكم: ${report.governingMode}</div>
+/home/z/my-project/upas/src/services/print-service.ts:298:    const isGov = key === r.governingElement;
+/home/z/my-project/upas/src/services/print-service.ts:388:        <div class="kv-row"><span class="kv-label">النمط الحاكم</span><span class="kv-value">${c.governingMode}</span></div>
+/home/z/my-project/upas/src/__tests__/calculations/calculations.test.ts:554:    expect(['roof', 'wall', 'floor']).toContain(result.overall.governingElement);
+/home/z/my-project/upas/src/__tests__/calculations/calculations.test.ts:555:    expect(['blast', 'penetration']).toContain(result.overall.governingMode);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4d-pipeline-integration.test.ts:143:    expect(['roof', 'wall', 'floor']).toContain(dr.verification.governingElement);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4d-pipeline-integration.test.ts:144:    expect(['flexure', 'shear', 'penetration', 'deflection', 'none']).toContain(dr.verification.governingMode);
+/home/z/my-project/upas/src/__tests__/pipeline/pipeline.test.ts:108:      expect(['roof', 'wall', 'floor']).toContain(overall.governingElement);
+/home/z/my-project/upas/src/__tests__/pipeline/pipeline.test.ts:109:      expect(['blast', 'penetration']).toContain(overall.governingMode);
+/home/z/my-project/upas/src/__tests__/pipeline/pipeline.test.ts:233:      expect(vm.summary.governingElementLabelAr).toBeDefined();
+/home/z/my-project/upas/src/__tests__/pipeline/pipeline.test.ts:234:      expect(vm.summary.governingModeLabelAr).toBeDefined();
+/home/z/my-project/upas/src/__tests__/pipeline/phase4f-design-ui.test.ts:264:    expect(['roof', 'wall', 'floor']).toContain(dr.governingElement);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:25: *   E) Governing Mode Report (5 tests)
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:26: *      Verify the system identifies flexure/shear/penetration/deflection governing.
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:701:// SUITE E: GOVERNING MODE REPORT
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:703:// Verify the system identifies the governing failure mode, not just PASS/FAIL.
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:705:describe('Phase 4G-E: Governing Mode Report', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:707:  it('E1: Governing mode is NOT just PASS/FAIL — it identifies the specific mode', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:714:    // Run verification to get governing mode
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:722:    // governingMode must be one of the four modes or 'none'
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:723:    expect(['flexure', 'shear', 'penetration', 'deflection', 'none']).toContain(verification.governingMode);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:725:    expect(typeof verification.governingMode).toBe('string');
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:728:  it('E2: Full verification identifies governing element and mode across all elements', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:748:    // Must identify a governing element
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:749:    expect(['roof', 'wall', 'floor']).toContain(verification.governingElement);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:751:    // Must identify a governing mode (specific, not boolean)
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:752:    expect(['flexure', 'shear', 'penetration', 'deflection', 'none']).toContain(verification.governingMode);
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:758:  it('E3: Flexure-governing case — thin slab, moderate blast', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:773:    // For thin slabs, flexure is typically the governing mode
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:777:    expect(typeof verification.governingMode).toBe('string');
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:778:    expect(verification.governingMode).not.toBe('');
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:781:  it('E4: Penetration-governing case — high penetration threat', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:783:    // To test penetration-governing, we run with NO penetration data inside designElement,
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:810:    // Governing mode should be 'penetration'
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:811:    expect(verification.governingMode).toBe('penetration');
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:814:  it('E5: Deflection-governing case — long span, thin slab', () => {
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:834:    expect(typeof verification.governingMode).toBe('string');
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:838:      // If it doesn't pass, deflection should be the governing mode
+/home/z/my-project/upas/src/__tests__/pipeline/phase4g-final-validation-gate.test.ts:839:      expect(verification.governingMode).toBe('deflection');
+/home/z/my-project/upas/src/__tests__/pipeline/phase5b-review-package.test.ts:520:      expect(bm.expected.governingElement).toBeTruthy();
+/home/z/my-project/upas/src/__tests__/pipeline/phase5b-review-package.test.ts:521:      expect(bm.expected.governingMode).toBeTruthy();
+/home/z/my-project/upas/src/__tests__/pipeline/phase4e-design-report.test.ts:192:  it('design section contains governing thickness data for all elements', () => {
+/home/z/my-project/upas/src/components/ui/ResultsPanel/index.tsx:49:          <ResultRow label="العنصر الحاكم" value={vm.summary.governingElementLabelAr} />
+/home/z/my-project/upas/src/components/ui/ResultsPanel/index.tsx:50:          <ResultRow label="نمط الفشل" value={vm.summary.governingModeLabelAr} />
+/home/z/my-project/upas/src/components/ui/ResultsPanel/index.tsx:141:                  lastDesignResult.governingElement === 'roof' ? 'السقف'
+/home/z/my-project/upas/src/components/ui/ResultsPanel/index.tsx:142:                    : lastDesignResult.governingElement === 'wall' ? 'الجدران' : 'الأرضية'
+/home/z/my-project/upas/src/__tests__/design/penetration-convergence.test.ts:5: * penetration/scabbing as a governing failure mode:
+/home/z/my-project/upas/src/__tests__/design/penetration-convergence.test.ts:165:      scabbingThickness: 0.50, // governing: 0.50 m
+/home/z/my-project/upas/src/__tests__/design/penetration-convergence.test.ts:192:    // Scabbing is the governing penetration mode
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:53:      governingElement: 'roof',
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:54:      governingMode: 'flexure',
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:112:    expect(['roof', 'wall', 'floor']).toContain(report.governingElement);
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:113:    expect(report.governingMode).toBeTruthy();
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:196:    expect(report.criticalElement.key).toBe(result.verification.governingElement);
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:197:    expect(report.criticalElement.governingMode).toBe(result.verification.governingMode);
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:234:    expect(report.governingElement).toBe(result.verification.governingElement);
+/home/z/my-project/upas/src/__tests__/design/professional-report.test.ts:235:    expect(report.governingMode).toBe(result.verification.governingMode);
+/home/z/my-project/upas/src/__tests__/design/design-input-adapter.test.ts:249:      governingElement: 'roof',
+/home/z/my-project/upas/src/__tests__/design/design-input-adapter.test.ts:250:      governingMode: 'blast',
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:10: *  6. Governing mode selection
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:342:// Test 11: Governing mode selection
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:344:describe('Test 11: Governing mode selection', () => {
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:345:  it('identifies shear as governing mode when shear SF is lowest', () => {
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:355:    expect(v.governingMode).toBe('shear');
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:358:  it('identifies penetration as governing mode when pen SF < 1', () => {
+/home/z/my-project/upas/src/__tests__/design/design-verification.test.ts:370:    expect(v.governingMode).toBe('penetration');
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:284:      governingElement: 'roof',
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:289:          roof: { element: 'roof', flexuralSF: 1.65, flexuralPass: true, shearSF: 1.31, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0014, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:290:          wall: { element: 'wall', flexuralSF: 1.85, flexuralPass: true, shearSF: 1.56, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0006, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:291:          floor: { element: 'floor', flexuralSF: 2.10, flexuralPass: true, shearSF: 2.08, shearPass: true, penetrationSF: Infinity, penetrationPass: true, deflectionRatio: 0.0003, deflectionPass: true, overallPass: true, governingMode: 'none', warnings: [] },
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:294:        governingElement: 'roof',
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:295:        governingMode: 'none',
+/home/z/my-project/upas/src/__tests__/design/design-foundation.test.ts:300:    expect(designResult.governingElement).toBe('roof');
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:13:  governingElement: 'roof' | 'wall' | 'floor';
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:28:const GOVERNING_HEADER: React.CSSProperties = {
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:35:function cellStyle(pass: boolean, elementKey: string, governingElement: string): React.CSSProperties {
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:37:  if (elementKey === governingElement) return { ...PASS_STYLE, borderLeft: '2px solid #f59e0b' };
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:41:export default function VerificationMatrix({ matrix, governingElement }: Props) {
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:66:                  ...(key === governingElement ? GOVERNING_HEADER : { backgroundColor: 'var(--upas-bg-primary, #f8fafc)', color: 'var(--upas-text-secondary)' }),
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:70:                {key === governingElement && (
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/VerificationMatrix.tsx:97:                      ...cellStyle(pass, key, governingElement),
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:24:    governingElement: 'roof',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:25:    governingElementAr: 'السقف',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:26:    governingMode: 'Shear',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:53:        overallPass: true, governingMode: 'Shear',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:62:        overallPass: true, governingMode: 'Flexure',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:71:        overallPass: true, governingMode: 'Flexure',
+/home/z/my-project/upas/src/__tests__/export/phase5e-export.test.ts:82:      penetrationSF: 1.50, deflectionRatio: 0.008, governingMode: 'Shear',
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/StructuralDiagram.tsx:8: *   - Color-coded element status: green=PASS, amber=governing, red=FAIL
+/home/z/my-project/upas/src/components/ui/ProfessionalReport/StructuralDiagram.tsx:26:  governingElement: 'roof' | 'wall' | 'floor';
+
+[Showing results with pagination = limit: 250]
