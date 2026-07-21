@@ -17,6 +17,10 @@ import type { DesignResult, DesignCriteria } from '../calculations/design/types'
 import type { VisualizationSettings } from '../models/VisualizationSettings';
 import { createProject } from '../models/Project';
 import { createVisualizationSettings } from '../models/VisualizationSettings';
+import { createSoilProfile } from '../models/Soil';
+import { createStructure } from '../models/Structure';
+import { createThreat } from '../models/Threat';
+import { createBomb } from '../models/Bomb';
 
 // ─── State Shape ───────────────────────────────────────────────────
 interface ProjectState {
@@ -114,12 +118,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   createNewProject: (name, description) => {
     const project = createProject({ name, description });
     const settings = createVisualizationSettings({ projectId: project.id });
+    const soil = createSoilProfile({ projectId: project.id });
+    const struct = createStructure({ projectId: project.id });
+    const threat = createThreat({ projectId: project.id });
+    const bomb = createBomb({ projectId: project.id });
     set({
       currentProject: project,
-      threats: [],
-      bombs: [],
-      soilProfile: null,
-      structure: null,
+      threats: [threat],
+      bombs: [bomb],
+      soilProfile: soil,
+      structure: struct,
       analysisResults: [],
       visualizationSettings: settings,
       projects: [...get().projects, project],

@@ -8,6 +8,8 @@ import React, { useCallback } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
 import { getBombTypes } from '../../../database';
 import { ThreatType, DetonationType } from '../../../types';
+import { createThreat } from '../../../models/Threat';
+import { createBomb } from '../../../models/Bomb';
 
 const DETONATION_TYPES = [
   { value: 'surface', label: 'سطحي' },
@@ -41,9 +43,23 @@ export default function ThreatForm() {
 
   // Auto-create if missing
   if (!threat || !bomb) {
+    const store = useProjectStore.getState();
+    const pid = store.currentProject?.id;
     return (
-      <div className="p-4 text-center text-sm" style={{ color: 'var(--upas-text-secondary)' }}>
-        سيتم إنشاء التهديد عند تحميل مشروع تجريبي
+      <div className="p-6 text-center" style={{ color: 'var(--upas-text-secondary)' }}>
+        <p className="text-sm mb-3">لا يوجد تهديد محدد</p>
+        <button
+          onClick={() => {
+            const t = createThreat({ projectId: pid });
+            const b = createBomb({ projectId: pid });
+            useProjectStore.getState().setThreats([t]);
+            useProjectStore.getState().setBombs([b]);
+          }}
+          className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-colors"
+          style={{ backgroundColor: 'var(--upas-accent, #3b82f6)' }}
+        >
+          + إنشاء تهديد جديد
+        </button>
       </div>
     );
   }

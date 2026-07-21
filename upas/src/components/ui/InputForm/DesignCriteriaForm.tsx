@@ -66,7 +66,7 @@ export default function DesignCriteriaForm() {
         >
           <span
             className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-            style={{ left: designEnabled ? '2px' : '22px' }}
+            style={{ right: designEnabled ? '2px' : '22px' }}
           />
         </button>
       </div>

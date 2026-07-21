@@ -8,6 +8,7 @@ import React, { useCallback } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
 import { getMaterials } from '../../../database';
 import { StructureType } from '../../../types';
+import { createStructure } from '../../../models/Structure';
 
 const STRUCTURE_TYPES = [
   { value: StructureType.Box, label: 'صندوق (Box)' },
@@ -33,8 +34,18 @@ export default function StructureForm() {
 
   if (!structure) {
     return (
-      <div className="p-4 text-center text-sm" style={{ color: 'var(--upas-text-secondary)' }}>
-        لا يوجد منشأ
+      <div className="p-6 text-center" style={{ color: 'var(--upas-text-secondary)' }}>
+        <p className="text-sm mb-3">لا يوجد منشأ</p>
+        <button
+          onClick={() => {
+            const s = createStructure({ projectId: useProjectStore.getState().currentProject?.id });
+            useProjectStore.getState().setStructure(s);
+          }}
+          className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-colors"
+          style={{ backgroundColor: 'var(--upas-accent, #3b82f6)' }}
+        >
+          + إنشاء منشأ جديد
+        </button>
       </div>
     );
   }

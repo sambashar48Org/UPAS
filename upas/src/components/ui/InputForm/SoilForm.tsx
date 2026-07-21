@@ -6,6 +6,7 @@
 
 import React, { useCallback } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
+import { createSoilProfile } from '../../../models/Soil';
 import { createSoilLayer } from '../../../models/Soil';
 import type { SoilProfile } from '../../../models/Soil';
 import { getSoilTypes } from '../../../database';
@@ -72,8 +73,18 @@ export default function SoilForm() {
 
   if (!soilProfile) {
     return (
-      <div className="p-4 text-center text-sm" style={{ color: 'var(--upas-text-secondary)' }}>
-        لا يوجد ملف تربة
+      <div className="p-6 text-center" style={{ color: 'var(--upas-text-secondary)' }}>
+        <p className="text-sm mb-3">لا يوجد ملف تربة</p>
+        <button
+          onClick={() => {
+            const profile = createSoilProfile({ projectId: useProjectStore.getState().currentProject?.id });
+            useProjectStore.getState().setSoilProfile(profile);
+          }}
+          className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-colors"
+          style={{ backgroundColor: 'var(--upas-accent, #3b82f6)' }}
+        >
+          + إنشاء ملف تربة جديد
+        </button>
       </div>
     );
   }

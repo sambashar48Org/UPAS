@@ -62,7 +62,7 @@ export function createSoilLayer(partial?: Partial<SoilLayer>, index?: number): S
  * Factory: create a soil profile with a default single layer
  */
 export function createSoilProfile(partial?: Partial<SoilProfile>): SoilProfile {
-  const defaultLayer = createSoilLayer({ name: 'طبقة التربة السطحية', soilTypeRef: 'sand' }, 0);
+  const defaultLayer = createSoilLayer({ name: 'طبقة التربة السطحية', soilTypeRef: 'sand_medium' }, 0);
   return {
     id: uuidv4(),
     projectId: partial?.projectId ?? '',
