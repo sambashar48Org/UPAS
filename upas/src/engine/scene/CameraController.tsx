@@ -89,7 +89,7 @@ export default function CameraController() {
       fitParams = computeFitView();
       // Reset autoFitRequested after consuming it
       if (autoFitRequested) {
-        useUIStore.getState().set({ autoFitRequested: false });
+        useUIStore.setState({ autoFitRequested: false });
       }
     } else {
       const preset = PRESETS[cameraPreset];

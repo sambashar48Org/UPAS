@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useProjectStore } from '../../../stores/projectStore';
 import { useUIStore, type AnalysisTab } from '../../../stores/uiStore';
-import { createDemoProject } from '../../../data/demoProject';
 import EngineeringScene from '../../../engine/scene/EngineeringScene';
 import { CutPlaneSlider } from '../../../engine/scene/CutPlane';
 import CameraToolbar from '../../ui/CameraToolbar';
@@ -35,22 +34,10 @@ export default function AnalysisView() {
   const sceneFPS = useUIStore((s) => s.sceneFPS);
   const visualizationMode = useUIStore((s) => s.visualizationMode);
 
-  const demoLoaded = useRef<string | null>(null);
   const [inputSubTab, setInputSubTab] = useState<'soil' | 'structure' | 'threat' | 'design'>('soil');
 
-  // Load demo project data on first mount
-  useEffect(() => {
-    if (!currentProject) return;
-    if (demoLoaded.current === currentProject.id) return;
-    demoLoaded.current = currentProject.id;
-
-    const demo = createDemoProject();
-    setCurrentProject(demo.project);
-    setStructure(demo.structure);
-    setSoilProfile(demo.soilProfile);
-    setThreats([demo.threat]);
-    setBombs([demo.bomb]);
-  }, [currentProject, setStructure, setSoilProfile, setThreats, setBombs, setCurrentProject]);
+  // NOTE: Demo data is loaded by Dashboard.handleLoadDemo() or user input.
+  // AnalysisView does NOT auto-load demo data — it renders whatever is in the store.
 
   // ─── No project ──────────────────────────────────────────────
   if (!currentProject) {

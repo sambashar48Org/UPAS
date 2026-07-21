@@ -29,7 +29,6 @@ export default function Dashboard() {
   const [isDemoLoading, setIsDemoLoading] = useState(false);
 
   const handleCreateProject = () => {
-    createNewProject();
     setActiveView('new-project');
   };
 

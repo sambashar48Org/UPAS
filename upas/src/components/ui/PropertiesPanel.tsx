@@ -174,11 +174,16 @@ export default function PropertiesPanel() {
           const resp = lastFullResult.blast[`${elemKey}Response` as keyof typeof lastFullResult.blast];
           const pen = lastFullResult.penetration[`${elemKey}Penetration` as keyof typeof lastFullResult.penetration];
           if (!resp && !pen) return null;
+
+          // Type guard: only access StructureResponse properties when resp has them
+          const hasResponse = resp && typeof resp === 'object' && 'safetyFactor' in resp;
+          const hasPenetration = pen && typeof pen === 'object' && 'penetrationDepthStructure' in pen;
+
           return (
             <>
               <Divider />
               <Section title="استجابة التحليل" icon="📊">
-                {resp && (
+                {hasResponse && (
                   <>
                     <Row label="معامل الأمان" value={resp.safetyFactor.toFixed(2)} highlight={resp.safetyFactor < 1.2} />
                     <Row label="الضغط المطبق" value={`${resp.appliedPressure.toFixed(1)} kPa`} />
@@ -189,12 +194,12 @@ export default function PropertiesPanel() {
                     <Row label="الدوران الطبيعي" value={`${resp.naturalPeriod.toFixed(2)} ms`} />
                   </>
                 )}
-                {pen && (
+                {hasPenetration && (
                   <>
                     <Divider />
                     <Row label="عمق الاختراق" value={`${(pen.penetrationDepthStructure * 1000).toFixed(1)} mm`} highlight={pen.isPerforated} />
-                    <Row label="اختراق كامل" value={pen.isPerforated ? 'نعم' : 'لا'} color={pen.isPerforated ? '#dc2626' : '#22c55e'} />
-                    <Row label="تقشر" value={pen.isSpalled ? 'نعم' : 'لا'} color={pen.isSpalled ? '#f97316' : '#22c55e'} />
+                    <Row label="اختراق كامل" value={pen.isPerforated ? 'نعم' : 'لا'} />
+                    <Row label="تقشر" value={pen.isSpalled ? 'نعم' : 'لا'} />
                     <Row label="قطر الحفرة" value={`${pen.craterDiameter.toFixed(2)} m`} />
                     <Row label="عمق الحفرة" value={`${pen.craterDepth.toFixed(2)} m`} />
                   </>
