@@ -149,11 +149,7 @@ const SoilLayers3D = React.memo(function SoilLayers3D({
 }: SoilLayers3DProps) {
   const visualizationMode = useUIStore((s) => s.visualizationMode);
 
-  // In surface mode, don't render any soil boxes
-  if (visualizationMode === 'surface') {
-    return null;
-  }
-
+  // ⚠️ Hooks Rules: must call useMemo BEFORE any early return.
   const layers = useMemo(
     () =>
       soilProfile.layers.filter(
@@ -161,6 +157,11 @@ const SoilLayers3D = React.memo(function SoilLayers3D({
       ),
     [soilProfile.layers, hiddenLayers]
   );
+
+  // In surface mode, don't render any soil boxes
+  if (visualizationMode === 'surface') {
+    return null;
+  }
 
   return (
     <group>

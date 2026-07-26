@@ -205,10 +205,10 @@ export default function ProfessionalReport() {
   const report = useMemo<ProfessionalReportData | null>(() => {
     if (!lastDesignResult || !lastFullResult) return null;
     try {
-      const designInput = buildDesignInput(lastFullResult);
+      const adapterResult = buildDesignInput(lastFullResult);
       return generateProfessionalReport(
         lastDesignResult,
-        designInput,
+        adapterResult.input,
         lastFullResult,
         currentProject?.name ?? 'مشروع بدون اسم',
       );

@@ -193,7 +193,7 @@ export default function ObjectTree() {
               setSelectedObject(structure.id, 'structure');
             }
           }}
-          isSelected={(selectedObjectType === 'structure' || selectedObjectType === 'structure-part') && structure && selectedObjectId === structure.id && !selectedStructurePart}
+          isSelected={Boolean((selectedObjectType === 'structure' || selectedObjectType === 'structure-part') && structure && selectedObjectId === structure.id && !selectedStructurePart)}
         >
           {structure && (
             <>

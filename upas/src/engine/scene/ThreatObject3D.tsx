@@ -7,6 +7,7 @@
  */
 
 import React, { useRef, useMemo } from 'react';
+import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 import type { ThreatObjectVM } from '../../visualization/VisualizationModel';
 
@@ -40,8 +41,8 @@ export default function ThreatObject3D({ data }: Props) {
           />
         </mesh>
       ) : (
-        <mesh>
-          <cylinderGeometry args={[size.sx / 2, size.sx / 2, size.sy, 16]} rotation={[0, 0, 0]} />
+        <mesh rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[size.sx / 2, size.sx / 2, size.sy, 16]} />
           <meshStandardMaterial
             color={data.color}
             transparent

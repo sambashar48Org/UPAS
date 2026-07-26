@@ -286,3 +286,36 @@ Stage Summary:
 - Documentation: User Guide, Engineering Limitations, Release Checklist
 - Freeze Gate maintained: zero modifications to calculations/design/analysis engines
 - Standard Mode unchanged: all 576 pre-existing tests pass identically
+---
+Task ID: Phase 5L
+Agent: main
+Task: Deep Audit & Comprehensive Fix — 3D Scene + Data Input Failure Recovery
+
+Work Log:
+- 5L-1: Read all uploaded user screenshots via VLM (vision model) to understand the desired UPAS UI state
+- 5L-2: Audited 25+ source files: projectStore, uiStore, AnalysisView, all InputForms, all engine/scene components, ObjectTree, PropertiesPanel, AnalysisToolbar, VisualizationModeControls
+- 5L-3: Installed missing node_modules via npm install
+- 5L-4: Ran tsc -b to identify all TypeScript errors — found 5 critical errors in app source
+- 5L-5: Fixed BUG-001 — SoilLayers3D.tsx: React Hooks violation (useMemo called AFTER early return on visualizationMode === 'surface'). Moved useMemo BEFORE the early return.
+- 5L-6: Fixed BUG-002 — ThreatObject3D.tsx: Added missing `import * as THREE from 'three'`; moved `rotation` prop from <cylinderGeometry> to <mesh> (where it belongs).
+- 5L-7: Fixed BUG-003 — ObjectTree.tsx line 196: Wrapped `isSelected` expression with Boolean() to coerce null → false (boolean|null → boolean|undefined).
+- 5L-8: Fixed BUG-004 — ProfessionalReport/index.tsx: buildDesignInput returns DesignAdapterResult (has .input and .warnings), but generateProfessionalReport expects DesignInput. Changed to pass `adapterResult.input`.
+- 5L-9: Fixed BUG-005 (UX) — projectStore.ts createNewProject: enriched default data from bare minimum (1 soil layer, basic structure, design disabled) to full demo-quality data:
+  * 4 soil layers (sand_loose, clay_soft, sand_medium, rock_weathered) with proper topElevation and thickness
+  * Water table at -3m, total depth 11m
+  * Box structure 8×5×3.5m with realistic thicknesses (roof 0.40m, walls 0.35m, floor 0.35m), burialDepth 3m, RC 350 materials
+  * Threat: surface blast, 5m standoff
+  * Bomb: TNT 100kg spherical
+  * Design criteria enabled by default (UFC 3-340-02 + ACI 318-19: fy=420, SF=1.5, cover=50mm, max rotation 8°)
+- 5L-10: Verified build — `vite build` succeeds (687 modules, 1.05s, 1643 KB bundle, _redirects present in dist/)
+- 5L-11: Generated comprehensive Arabic audit report at /home/z/my-project/download/UPAS_Audit_Report.docx (passed docx postcheck: 0 errors, 2 minor warnings)
+- 5L-12: Did NOT redeploy to Netlify (awaiting user approval per stated constraint)
+
+Stage Summary:
+- 5 files modified: SoilLayers3D.tsx, ThreatObject3D.tsx, ObjectTree.tsx, ProfessionalReport/index.tsx, projectStore.ts
+- All app-source TypeScript errors resolved (only test files + calculation engine have remaining errors, both off-limits)
+- Build succeeds: `vite build` produces clean dist/ folder
+- New projects now start with rich default data matching the demo — users see 4 colored soil layers + structure + threat immediately on AnalysisView mount
+- Comprehensive Arabic audit report generated and saved to /home/z/my-project/download/
+- Freeze Gate maintained: zero modifications to calculations/design/analysis engines
+- No new features added — all changes are bug fixes or default data enrichment
