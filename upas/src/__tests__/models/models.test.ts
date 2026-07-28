@@ -58,7 +58,7 @@ describe('Model Creation', () => {
     const profile = createSoilProfile({ projectId: 'test-id' });
     expect(profile.id).toBeTruthy();
     expect(profile.layers).toHaveLength(1);
-    expect(profile.layers[0]!.soilTypeRef).toBe('sand');
+    expect(profile.layers[0]!.soilTypeRef).toBe('sand_medium');
   });
 
   it('should create a structure with defaults', () => {

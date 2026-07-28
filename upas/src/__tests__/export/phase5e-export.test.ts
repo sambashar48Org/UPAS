@@ -25,13 +25,14 @@ function createMockReport(): ProfessionalReportData {
     governingElementAr: 'السقف',
     governingMode: 'Shear',
     designBasis: [
-      { item: 'الكود', value: 'ACI 318-19' },
-      { item: 'نموذج الخرسانة', value: 'RC 350' },
+      { item: 'الكود', itemEn: 'Design Code', value: 'ACI 318-19' },
+      { item: 'نموذج الخرسانة', itemEn: 'Concrete Model', value: 'RC 350' },
     ],
     threat: {
       tntEquivalent: 100,
       standoff: 5,
       scaledDistance: 1.077,
+      detonationType: 'surface',
       detonationTypeAr: 'انفجار سطحي',
     },
     blast: {
@@ -78,7 +79,7 @@ function createMockReport(): ProfessionalReportData {
       { check: 'الانحراف', checkEn: 'Deflection', roof: true, wall: true, floor: true },
     ],
     criticalElement: {
-      label: 'السقف', flexuralSF: 1.20, shearSF: 1.15,
+      key: 'roof' as const, label: 'السقف', labelEn: 'Roof', flexuralSF: 1.20, shearSF: 1.15,
       penetrationSF: 1.50, deflectionRatio: 0.008, governingMode: 'Shear',
     },
     warnings: ['تحذير: العنصر الحاكم يقترب من الحد الأدنى لمعامل الأمان'],
@@ -86,8 +87,8 @@ function createMockReport(): ProfessionalReportData {
     assumptionCount: 15,
     equationCategories: ['blast-loading', 'sdof-dynamics', 'structural-demand', 'reinforcement-design', 'capacity-verification'],
     criticalAssumptions: [
-      { id: 'DA-001', description: 'استجابة مرنة خطية' },
-      { id: 'DA-005', description: 'دعم بسيط على الحواف' },
+      { id: 'DA-001', description: 'استجابة مرنة خطية', descriptionEn: 'Linear elastic response' },
+      { id: 'DA-005', description: 'دعم بسيط على الحواف', descriptionEn: 'Simply supported at edges' },
     ],
   };
 }

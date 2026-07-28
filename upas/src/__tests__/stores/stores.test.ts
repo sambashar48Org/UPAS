@@ -48,6 +48,9 @@ describe('projectStore', () => {
 
   it('should add and remove threats', () => {
     useProjectStore.getState().createNewProject();
+    // createNewProject now creates a default threat, so initial count is 1
+    expect(useProjectStore.getState().threats).toHaveLength(1);
+
     useProjectStore.getState().addThreat({
       id: 'threat-1',
       projectId: 'x',
@@ -62,10 +65,10 @@ describe('projectStore', () => {
       notes: '',
     });
 
-    expect(useProjectStore.getState().threats).toHaveLength(1);
+    expect(useProjectStore.getState().threats).toHaveLength(2);
 
     useProjectStore.getState().removeThreat('threat-1');
-    expect(useProjectStore.getState().threats).toHaveLength(0);
+    expect(useProjectStore.getState().threats).toHaveLength(1);
   });
 
   it('should reset state completely', () => {

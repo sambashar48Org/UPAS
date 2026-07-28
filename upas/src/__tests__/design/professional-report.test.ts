@@ -45,26 +45,34 @@ function runDesignFromInput(input: DesignInput): DesignResult {
 /** Create a minimal FullAnalysisResult for testing */
 function makeFakeAnalysisResult(): FullAnalysisResult {
   return {
+    id: 'test-analysis-id',
+    projectId: 'test-project-id',
     calculatedAt: '2026-07-20T12:00:00Z',
+    analysisType: 'blast',
+    input: {} as any,
     overall: {
-      protectionLevel: 'low',
-      safetyFactor: 1.2,
+      protectionLevel: 'marginal',
+      minSafetyFactor: 1.2,
       isAdequate: true,
       governingElement: 'roof',
-      governingMode: 'flexure',
+      governingMode: 'blast',
     },
     blast: {
       parameters: {
         tntEquivalentMass: 100,
-        chargeMass: 100,
-        distance: 10,
         scaledDistance: 2.154,
+        distance: 10,
         peakIncidentPressure: 150,
         peakReflectedPressure: 450,
         peakDynamicPressure: 50,
         positivePhaseImpulse: 800,
         positivePhaseDuration: 20,
         reflectionCoefficient: 3.0,
+        shockFrontVelocity: 6000,
+        arrivalTime: 15,
+        shapeCorrectionFactor: 1.0,
+        groundReflection: 'regular',
+        groundReflectedPressure: 300,
       },
       soilInteraction: null,
       roofResponse: null,
@@ -76,17 +84,15 @@ function makeFakeAnalysisResult(): FullAnalysisResult {
       wallPenetration: null,
       floorPenetration: null,
     },
-    soil: {
-      layers: [],
-      averageProperties: {
-        waveVelocity: 300,
-        unitWeight: 18,
-        attenuationFactor: 0.5,
-      },
+    visualization: {
+      pressureContours: [],
+      damageZones: [],
+      threatPath: null,
+      structureStressRegions: [],
     },
-    structure: {} as any,
     warnings: [],
-  } as FullAnalysisResult;
+    recommendations: [],
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════

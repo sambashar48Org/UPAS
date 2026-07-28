@@ -125,10 +125,11 @@ describe('5G-1 Demo Project', () => {
     // Compare calculation results (exclude non-deterministic fields: id, calculatedAt)
     const r1 = result1.fullResult!;
     const r2 = result2.fullResult!;
-    expect(r1.blastParameters).toEqual(r2.blastParameters);
-    expect(r1.groundShock).toEqual(r2.groundShock);
-    expect(r1.structuralResponse).toEqual(r2.structuralResponse);
-    expect(r1.soilStructureInteraction).toEqual(r2.soilStructureInteraction);
+    // FullAnalysisResult stores blast data inside .blast.parameters
+    expect(r1.blast.parameters).toEqual(r2.blast.parameters);
+    expect(r1.blast.soilInteraction).toEqual(r2.blast.soilInteraction);
+    expect(r1.blast.roofResponse).toEqual(r2.blast.roofResponse);
+    expect(r1.blast.soilInteraction).toEqual(r2.blast.soilInteraction);
   });
 });
 
